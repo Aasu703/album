@@ -1,15 +1,6 @@
-import Image from "next/image"; 
-import Link from "next/link";
+import { redirect } from "next/navigation";
 
+/** Redirects root route traffic to the albums listing page. */
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        Photo Gallery App
-        <Link href="/album">View Album</Link>
-        <Link href="/upload">Upload Photos</Link>
-        
-      </div>
-      </main>
-  );
+  redirect("/album");
 }

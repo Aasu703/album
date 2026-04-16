@@ -44,17 +44,17 @@ export default async function AlbumDetailPage({ params, searchParams }: AlbumDet
 	return (
 		<main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
 			<section className="space-y-1">
-				<h1 className="text-3xl font-bold tracking-tight text-gray-900">{typedAlbum.name}</h1>
-				<p className="text-sm text-gray-600">
+				<h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{typedAlbum.name}</h1>
+				<p className="text-sm text-gray-600 dark:text-gray-300">
 					Showing {typedPhotos.length} {typedPhotos.length === 1 ? "photo" : "photos"}
 				</p>
-				<p className="text-xs text-gray-500">
+				<p className="text-xs text-gray-500 dark:text-gray-400">
 					To avoid browser slowdowns, this page renders up to {safeLimit} photos at once.
 				</p>
 			</section>
 
 			{photosError ? (
-				<p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+				<p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
 					Failed to load photos: {photosError.message}
 				</p>
 			) : null}

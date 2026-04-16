@@ -231,17 +231,17 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+      className="w-full space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900"
     >
       <div className="space-y-1">
-        <label htmlFor="album-select" className="text-sm font-medium text-gray-700">
+        <label htmlFor="album-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">
           Album
         </label>
         <select
           id="album-select"
           value={albumId}
           onChange={(event) => setAlbumId(event.target.value)}
-          className="min-h-11 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500"
+          className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
         >
           {albums.map((album) => (
             <option key={album.id} value={album.id}>
@@ -252,7 +252,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="photo-title" className="text-sm font-medium text-gray-700">
+        <label htmlFor="photo-title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
           Title (optional)
         </label>
         <input
@@ -260,7 +260,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
           type="text"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          className="min-h-11 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-500"
+          className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500"
           placeholder="Sunset at the beach"
         />
       </div>
@@ -271,21 +271,21 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
         onDragLeave={handleDragLeave}
         className={`rounded-xl border border-dashed p-5 text-center transition ${
           isDragging
-            ? "border-gray-500 bg-gray-100"
-            : "border-gray-300 bg-gray-50"
+            ? "border-gray-500 bg-gray-100 dark:border-gray-500 dark:bg-gray-800"
+            : "border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-950"
         }`}
       >
-        <p className="text-sm text-gray-700">
+        <p className="text-sm text-gray-700 dark:text-gray-200">
           {file ? `Selected: ${file.name}` : "Drag and drop an image here (desktop)"}
         </p>
-        <p className="mt-2 text-xs text-gray-500">or</p>
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">or</p>
         <label
           htmlFor="photo-file"
-          className="mt-3 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white"
+          className="mt-3 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white dark:bg-gray-100 dark:text-gray-900"
         >
           Click or tap to select photo
         </label>
-        <p className="mt-2 text-xs text-gray-500">Accepted: JPEG, PNG, WEBP, HEIC (max 10MB)</p>
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Accepted: JPEG, PNG, WEBP, HEIC (max 10MB)</p>
         <input
           id="photo-file"
           type="file"
@@ -295,7 +295,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
         />
 
         {previewUrl ? (
-          <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
+          <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
             <Image
               src={previewUrl}
               alt="Selected photo preview"
@@ -308,30 +308,30 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
       </div>
 
       {loading ? (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
-          <div className="mb-1 flex items-center gap-2 text-sm text-gray-700">
-            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
+        <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-950">
+          <div className="mb-1 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700 dark:border-gray-700 dark:border-t-gray-200" />
             Uploading...
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+          <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
             <div
-              className="h-full rounded-full bg-gray-800 transition-all"
+              className="h-full rounded-full bg-gray-800 transition-all dark:bg-gray-200"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
-          <p className="mt-1 text-xs text-gray-500">{uploadProgress}%</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uploadProgress}%</p>
         </div>
       ) : null}
 
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
 
       {success && uploadedUrl ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-          <p className="text-sm font-medium text-emerald-700">{success}</p>
-          <p className="mt-1 text-xs text-emerald-700">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950/50">
+          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{success}</p>
+          <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
             Album: {selectedAlbumName || "Selected album"}
           </p>
-          <div className="mt-3 overflow-hidden rounded-lg border border-emerald-200 bg-white">
+          <div className="mt-3 overflow-hidden rounded-lg border border-emerald-200 bg-white dark:border-emerald-900 dark:bg-gray-900">
             <Image
               src={uploadedUrl}
               alt="Uploaded photo thumbnail"
@@ -346,7 +346,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
       <button
         type="submit"
         disabled={loading || albums.length === 0}
-        className="min-h-11 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        className="min-h-11 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900"
       >
         {loading ? "Uploading photo..." : "Upload photo"}
       </button>

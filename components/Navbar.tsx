@@ -11,6 +11,7 @@ const links = [
 /** Renders the top navigation for album and upload pages. */
 export default function Navbar() {
   const pathname = usePathname();
+  const currentPath = pathname ?? "";
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur">
@@ -20,7 +21,7 @@ export default function Navbar() {
         </Link>
         <div className="flex items-center gap-2">
           {links.map((link) => {
-            const isActive = pathname.startsWith(link.href);
+            const isActive = currentPath.startsWith(link.href);
 
             return (
               <Link

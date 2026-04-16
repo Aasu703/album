@@ -1,10 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
-import { CldImage } from "next-cloudinary";
 
 import type { Photo } from "@/app/lib/types";
-import { extractPublicIdFromUrl } from "@/app/lib/cloudinary";
 
 interface PhotoGridProps {
   photos: Photo[];
@@ -19,9 +18,9 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
       photos
         .map((photo) => ({
           photo,
-          publicId: extractPublicIdFromUrl(photo.url),
+          url: photo.url,
         }))
-        .filter((item) => Boolean(item.publicId)),
+        .filter((item) => Boolean(item.url)),
     [photos],
   );
 
@@ -36,20 +35,18 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {photoItems.map(({ photo, publicId }) => (
+        {photoItems.map(({ photo, url }) => (
           <button
             key={photo.id}
             type="button"
             onClick={() => setActivePhoto(photo)}
             className="group relative aspect-square overflow-hidden rounded-xl bg-slate-100"
           >
-            <CldImage
-              src={publicId as string}
+            <Image
+              src={url}
               alt={photo.title ?? "Album photo"}
               width={300}
               height={300}
-              crop="fill"
-              gravity="auto"
               className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
             />
           </button>
@@ -74,12 +71,11 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
               </button>
             </div>
             <div className="overflow-hidden rounded-xl bg-slate-950">
-              <CldImage
-                src={extractPublicIdFromUrl(activePhoto.url) as string}
+              <Image
+                src={activePhoto.url}
                 alt={activePhoto.title ?? "Expanded photo"}
                 width={1400}
                 height={900}
-                crop="limit"
                 className="h-auto w-full object-contain"
               />
             </div>

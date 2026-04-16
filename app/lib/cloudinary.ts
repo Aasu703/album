@@ -1,28 +1,36 @@
 import { v2 as cloudinarySdk } from "cloudinary";
 
-/** Reads and validates Cloudinary server-side credentials. */
-function getCloudinaryEnv() {
-	const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-	const apiKey = process.env.CLOUDINARY_API_KEY;
-	const apiSecret = process.env.CLOUDINARY_API_SECRET;
+export interface CloudinaryEnv {
+	cloudName: string;
+	apiKey: string;
+	apiSecret: string;
+}
+
+/** Reads Cloudinary server-side credentials when they are available. */
+export function getCloudinaryEnv(): CloudinaryEnv | null {
+	const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+	const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
+	const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
 
 	if (!cloudName || !apiKey || !apiSecret) {
-		throw new Error(
-			"Missing Cloudinary environment variables: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.",
-		);
+		return null;
 	}
 
 	return { cloudName, apiKey, apiSecret };
 }
 
-const { cloudName, apiKey, apiSecret } = getCloudinaryEnv();
+const cloudinaryEnv = getCloudinaryEnv();
 
-cloudinarySdk.config({
-	cloud_name: cloudName,
-	api_key: apiKey,
-	api_secret: apiSecret,
-	secure: true,
-});
+export const hasCloudinaryCredentials = Boolean(cloudinaryEnv);
+
+if (cloudinaryEnv) {
+	cloudinarySdk.config({
+		cloud_name: cloudinaryEnv.cloudName,
+		api_key: cloudinaryEnv.apiKey,
+		api_secret: cloudinaryEnv.apiSecret,
+		secure: true,
+	});
+}
 
 export const cloudinary = cloudinarySdk;
 

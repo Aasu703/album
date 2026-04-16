@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 
-import { cloudinary } from "@/app/lib/cloudinary";
+import { cloudinary, hasCloudinaryCredentials } from "@/app/lib/cloudinary";
 import { supabase } from "@/app/lib/supabase";
 import type { ApiResponse, Photo } from "@/app/lib/types";
 
 /** Uploads image bytes to Cloudinary and returns its secure URL. */
 async function uploadToCloudinary(file: File): Promise<string> {
+  if (!hasCloudinaryCredentials) {
+    throw new Error(
+      "Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to enable uploads.",
+    );
+  }
+                                           
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 

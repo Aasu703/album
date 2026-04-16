@@ -7,7 +7,7 @@ import type { Album } from "@/app/lib/types";
 /** Renders all albums and the create-album form. */
 export default async function AlbumPage() {
     const { data, error } = await supabase
-        .from("albums")
+    .from("albums")
         .select("id, name, cover_url, created_at")
         .order("created_at", { ascending: false });
 

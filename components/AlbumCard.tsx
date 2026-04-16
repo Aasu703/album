@@ -1,8 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
-import { CldImage } from "next-cloudinary";
 
 import type { Album } from "@/app/lib/types";
-import { extractPublicIdFromUrl } from "@/app/lib/cloudinary";
 
 interface AlbumCardProps {
   album: Album;
@@ -10,20 +9,16 @@ interface AlbumCardProps {
 
 /** Renders a single album card with optional Cloudinary cover image. */
 export default function AlbumCard({ album }: AlbumCardProps) {
-  const coverPublicId = extractPublicIdFromUrl(album.cover_url);
-
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <Link href={`/album/${album.id}`} className="block">
         <div className="relative aspect-[4/3] w-full bg-slate-100">
-          {coverPublicId ? (
-            <CldImage
-              src={coverPublicId}
+          {album.cover_url ? (
+            <Image
+              src={album.cover_url}
               alt={`${album.name} cover`}
               fill
               sizes="(max-width: 768px) 100vw, 33vw"
-              crop="fill"
-              gravity="auto"
               className="object-cover"
             />
           ) : (

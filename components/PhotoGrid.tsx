@@ -3,10 +3,16 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
+import { isAllowedRemoteImageUrl } from "@/app/lib/image";
 import type { Photo } from "@/app/lib/types";
 
 interface PhotoGridProps {
   photos: Photo[];
+}
+
+interface PhotoItem {
+  photo: Photo;
+  url: string;
 }
 
 /** Renders photo thumbnails and opens a full-size lightbox on click. */
@@ -18,16 +24,16 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
       photos
         .map((photo) => ({
           photo,
-          url: photo.url,
+          url: isAllowedRemoteImageUrl(photo.url) ? photo.url : null,
         }))
-        .filter((item) => Boolean(item.url)),
+        .filter((item): item is PhotoItem => Boolean(item.url)),
     [photos],
   );
 
-  if (photos.length === 0) {
+  if (photoItems.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-        No photos in this album yet.
+      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
+        No valid photos to display yet.
       </div>
     );
   }
@@ -39,8 +45,8 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
           <button
             key={photo.id}
             type="button"
-            onClick={() => setActivePhoto(photo)}
-            className="group relative aspect-square overflow-hidden rounded-xl bg-slate-100"
+            onClick={() => setActivePhoto({ ...photo, url })}
+            className="group relative aspect-square overflow-hidden rounded-xl bg-gray-100"
           >
             <Image
               src={url}
@@ -73,7 +79,7 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
                 Close
               </button>
             </div>
-            <div className="overflow-hidden rounded-xl bg-slate-950">
+            <div className="overflow-hidden rounded-xl bg-gray-950">
               <Image
                 src={activePhoto.url}
                 alt={activePhoto.title ?? "Expanded photo"}

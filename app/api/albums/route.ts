@@ -5,7 +5,6 @@ import type { Album, ApiResponse } from "@/app/lib/types";
 
 interface CreateAlbumBody {
   name?: string;
-  cover_url?: string;
 }
 
 /** Fetches all albums ordered by creation date. */
@@ -46,8 +45,6 @@ export async function POST(request: Request) {
   }
 
   const name = body.name?.trim();
-  const coverUrl = body.cover_url?.trim();
-
   if (!name) {
     return NextResponse.json(
       { data: null, error: "Album name is required." } satisfies ApiResponse<null>,
@@ -59,7 +56,7 @@ export async function POST(request: Request) {
     .from("albums")
     .insert({
       name,
-      cover_url: coverUrl ? coverUrl : null,
+      cover_url: null,
     })
     .select("id, name, cover_url, created_at")
     .single();

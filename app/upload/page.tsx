@@ -13,8 +13,8 @@ export default async function UploadPage() {
     return (
         <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
             <section className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Upload Photo</h1>
-                <p className="text-sm text-slate-600">Choose an album and upload your photo to Cloudinary.</p>
+                <h1 className="text-3xl font-bold tracking-tight text-gray-900">Upload Photo</h1>
+                <p className="text-sm text-gray-600">Choose an album and upload your photo to Cloudinary.</p>
             </section>
 
             {error ? (

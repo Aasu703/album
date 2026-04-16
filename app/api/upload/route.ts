@@ -4,6 +4,15 @@ import { cloudinary, hasCloudinaryCredentials } from "@/app/lib/cloudinary";
 import { supabase } from "@/app/lib/supabase";
 import type { ApiResponse, Photo } from "@/app/lib/types";
 
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]);
+
 /** Uploads image bytes to Cloudinary and returns its secure URL. */
 async function uploadToCloudinary(file: File): Promise<string> {
   if (!hasCloudinaryCredentials) {
@@ -56,6 +65,23 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    return NextResponse.json(
+      {
+        data: null,
+        error: "Unsupported file type. Please upload JPEG, PNG, WEBP, or HEIC.",
+      } satisfies ApiResponse<null>,
+      { status: 400 },
+    );
+  }
+
+  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+    return NextResponse.json(
+      { data: null, error: "File too large. Maximum allowed size is 10MB." } satisfies ApiResponse<null>,
+      { status: 413 },
+    );
+  }
+
   try {
     const uploadedUrl = await uploadToCloudinary(file);
 
@@ -76,8 +102,40 @@ export async function POST(request: Request) {
       );
     }
 
+    const { count, error: countError } = await supabase
+      .from("photos")
+      .select("id", { count: "exact", head: true })
+      .eq("album_id", albumId);
+
+    if (countError) {
+      return NextResponse.json(
+        { data: null, error: countError.message } satisfies ApiResponse<null>,
+        { status: 500 },
+      );
+    }
+
+    if (count === 1) {
+      const { error: coverError } = await supabase
+        .from("albums")
+        .update({ cover_url: uploadedUrl })
+        .eq("id", albumId)
+        .is("cover_url", null);
+
+      if (coverError) {
+        return NextResponse.json(
+          { data: null, error: coverError.message } satisfies ApiResponse<null>,
+          { status: 500 },
+        );
+      }
+    }
+
     return NextResponse.json(
-      { data: data as Photo, error: null } satisfies ApiResponse<Photo>,
+      {
+        success: true,
+        url: uploadedUrl,
+        data: data as Photo,
+        error: null,
+      },
       { status: 201 },
     );
   } catch (error) {

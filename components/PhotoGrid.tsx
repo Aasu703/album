@@ -47,6 +47,9 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
               alt={photo.title ?? "Album photo"}
               width={300}
               height={300}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              quality={75}
+              loading="lazy"
               className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
             />
           </button>
@@ -76,6 +79,8 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
                 alt={activePhoto.title ?? "Expanded photo"}
                 width={1400}
                 height={900}
+                sizes="(max-width: 1280px) 100vw, 1280px"
+                quality={85}
                 className="h-auto w-full object-contain"
               />
             </div>

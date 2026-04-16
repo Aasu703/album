@@ -7,11 +7,17 @@ import type { Album, Photo } from "@/app/lib/types";
 
 interface AlbumDetailPageProps {
 	params: Promise<{ id: string }>;
+	searchParams?: Promise<{ limit?: string }>;
 }
 
 /** Renders one album and all of its photos from Supabase. */
-export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) {
+export default async function AlbumDetailPage({ params, searchParams }: AlbumDetailPageProps) {
 	const { id } = await params;
+	const resolvedSearchParams = (await searchParams) ?? {};
+	const requestedLimit = Number.parseInt(resolvedSearchParams.limit ?? "80", 10);
+	const safeLimit = Number.isFinite(requestedLimit)
+		? Math.min(Math.max(requestedLimit, 1), 120)
+		: 80;
 
 	const [{ data: album, error: albumError }, { data: photos, error: photosError }] =
 		await Promise.all([
@@ -24,6 +30,7 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
 				.from("photos")
 				.select("id, album_id, url, title, created_at")
 				.eq("album_id", id)
+				.limit(safeLimit)
 				.order("created_at", { ascending: false }),
 		]);
 
@@ -37,9 +44,12 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
 	return (
 		<main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
 			<section className="space-y-1">
-				<h1 className="text-3xl font-bold tracking-tight text-slate-900">{typedAlbum.name}</h1>
-				<p className="text-sm text-slate-600">
-					{typedPhotos.length} {typedPhotos.length === 1 ? "photo" : "photos"}
+				<h1 className="text-3xl font-bold tracking-tight text-gray-900">{typedAlbum.name}</h1>
+				<p className="text-sm text-gray-600">
+					Showing {typedPhotos.length} {typedPhotos.length === 1 ? "photo" : "photos"}
+				</p>
+				<p className="text-xs text-gray-500">
+					To avoid browser slowdowns, this page renders up to {safeLimit} photos at once.
 				</p>
 			</section>
 

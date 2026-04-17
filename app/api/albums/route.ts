@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { apiError, isTrustedOrigin } from "@/app/lib/security";
 import { supabase } from "@/app/lib/supabase";
 import type { Album, ApiResponse } from "@/app/lib/types";
 
@@ -33,23 +34,21 @@ export async function GET() {
 
 /** Creates a new album from validated request body data. */
 export async function POST(request: Request) {
+  if (!isTrustedOrigin(request)) {
+    return apiError("Request origin is not allowed.", 403);
+  }
+
   let body: CreateAlbumBody;
 
   try {
     body = (await request.json()) as CreateAlbumBody;
   } catch {
-    return NextResponse.json(
-      { data: null, error: "Invalid JSON body." } satisfies ApiResponse<null>,
-      { status: 400 },
-    );
+    return apiError("Invalid JSON body.", 400);
   }
 
   const name = body.name?.trim();
   if (!name) {
-    return NextResponse.json(
-      { data: null, error: "Album name is required." } satisfies ApiResponse<null>,
-      { status: 400 },
-    );
+    return apiError("Album name is required.", 400);
   }
 
   const { data, error } = await supabase
@@ -62,10 +61,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json(
-      { data: null, error: error.message } satisfies ApiResponse<null>,
-      { status: 500 },
-    );
+    return apiError(error.message, 500);
   }
 
   return NextResponse.json(

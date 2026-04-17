@@ -1,0 +1,87 @@
+services:
+  traefik:
+    image: traefik:v3.1
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=album-web
+      - --entrypoints.web.address=:80
+      - --api.dashboard=false
+      - --ping=true
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    pids_limit: 200
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - web
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?set NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:?set NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    expose:
+      - "3000"
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    pids_limit: 300
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    depends_on:
+      - traefik
+    networks:
+      - web
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.album.rule=Host(`${APP_DOMAIN:-localhost}`)
+      - traefik.http.routers.album.entrypoints=web
+      - traefik.http.services.album.loadbalancer.server.port=3000
+      - traefik.http.routers.album.middlewares=album-security
+      - traefik.http.middlewares.album-security.headers.frameDeny=true
+      - traefik.http.middlewares.album-security.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.album-security.headers.browserXssFilter=true
+      - traefik.http.middlewares.album-security.headers.referrerPolicy=no-referrer
+      - traefik.http.middlewares.album-security.headers.stsSeconds=31536000
+      - traefik.http.middlewares.album-security.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.album-security.headers.stsPreload=true
+
+networks:
+  web:
+    driver: bridge

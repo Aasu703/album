@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { cloudinary, hasCloudinaryCredentials } from "@/app/lib/cloudinary";
+import { apiError, isTrustedOrigin } from "@/app/lib/security";
 import { supabase } from "@/app/lib/supabase";
-import type { ApiResponse, Photo } from "@/app/lib/types";
+import type { Photo } from "@/app/lib/types";
 
 const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -46,40 +47,29 @@ async function uploadToCloudinary(file: File): Promise<string> {
 
 /** Handles image upload, then stores metadata in Supabase photos table. */
 export async function POST(request: Request) {
+  if (!isTrustedOrigin(request)) {
+    return apiError("Request origin is not allowed.", 403);
+  }
+
   const formData = await request.formData();
   const albumId = String(formData.get("album_id") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const file = formData.get("file");
 
   if (!albumId) {
-    return NextResponse.json(
-      { data: null, error: "album_id is required." } satisfies ApiResponse<null>,
-      { status: 400 },
-    );
+    return apiError("album_id is required.", 400);
   }
 
   if (!(file instanceof File) || file.size === 0) {
-    return NextResponse.json(
-      { data: null, error: "A valid image file is required." } satisfies ApiResponse<null>,
-      { status: 400 },
-    );
+    return apiError("A valid image file is required.", 400);
   }
 
   if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    return NextResponse.json(
-      {
-        data: null,
-        error: "Unsupported file type. Please upload JPEG, PNG, WEBP, or HEIC.",
-      } satisfies ApiResponse<null>,
-      { status: 400 },
-    );
+    return apiError("Unsupported file type. Please upload JPEG, PNG, WEBP, or HEIC.", 400);
   }
 
   if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-    return NextResponse.json(
-      { data: null, error: "File too large. Maximum allowed size is 10MB." } satisfies ApiResponse<null>,
-      { status: 413 },
-    );
+    return apiError("File too large. Maximum allowed size is 10MB.", 413);
   }
 
   try {
@@ -96,10 +86,7 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { data: null, error: error.message } satisfies ApiResponse<null>,
-        { status: 500 },
-      );
+      return apiError(error.message, 500);
     }
 
     const { count, error: countError } = await supabase
@@ -108,10 +95,7 @@ export async function POST(request: Request) {
       .eq("album_id", albumId);
 
     if (countError) {
-      return NextResponse.json(
-        { data: null, error: countError.message } satisfies ApiResponse<null>,
-        { status: 500 },
-      );
+      return apiError(countError.message, 500);
     }
 
     if (count === 1) {
@@ -122,10 +106,7 @@ export async function POST(request: Request) {
         .is("cover_url", null);
 
       if (coverError) {
-        return NextResponse.json(
-          { data: null, error: coverError.message } satisfies ApiResponse<null>,
-          { status: 500 },
-        );
+        return apiError(coverError.message, 500);
       }
     }
 
@@ -141,9 +122,6 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Upload failed.";
 
-    return NextResponse.json(
-      { data: null, error: message } satisfies ApiResponse<null>,
-      { status: 500 },
-    );
+    return apiError(message, 500);
   }
 }

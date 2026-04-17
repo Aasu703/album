@@ -16,14 +16,14 @@ export default async function AlbumPage() {
     return (
         <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
             <section className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900">My Albums</h1>
-                <p className="text-sm text-gray-600">Create albums and keep your memories organized.</p>
+                <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">My Albums</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Create albums and keep your memories organized.</p>
             </section>
 
             <AlbumForm />
 
             {error ? (
-                <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
                     Failed to load albums: {error.message}
                 </p>
             ) : null}

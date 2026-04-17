@@ -32,7 +32,7 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
 
   if (photoItems.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
+      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
         No valid photos to display yet.
       </div>
     );
@@ -46,7 +46,7 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
             key={photo.id}
             type="button"
             onClick={() => setActivePhoto({ ...photo, url })}
-            className="group relative aspect-square overflow-hidden rounded-xl bg-gray-100"
+            className="group relative aspect-square overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800"
           >
             <Image
               src={url}
@@ -74,7 +74,7 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
               <button
                 type="button"
                 onClick={() => setActivePhoto(null)}
-                className="rounded-full border border-white/40 px-3 py-1 text-xs"
+                className="rounded-full border border-white/40 px-3 py-1 text-xs text-white"
               >
                 Close
               </button>

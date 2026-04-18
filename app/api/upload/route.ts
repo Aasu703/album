@@ -1,6 +1,6 @@
 import {
   cloudinary,
-  extractPublicIdFromUrl,
+  extractPublicId,
   hasCloudinaryCredentials,
 } from "@/app/lib/cloudinary";
 import { apiError, apiSuccess, getClientIp, isTrustedOrigin } from "@/app/lib/security";
@@ -85,7 +85,7 @@ async function cleanupUploadedAsset(uploadedUrl: string | null) {
     return;
   }
 
-  const publicId = extractPublicIdFromUrl(uploadedUrl);
+  const publicId = extractPublicId(uploadedUrl);
   if (!publicId) {
     return;
   }

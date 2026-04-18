@@ -94,7 +94,7 @@ export default function JoinPartyClient({ joinCode }: JoinPartyClientProps) {
         <button
           type="button"
           onClick={() => void loadParty()}
-          className="min-h-11 rounded-full bg-rose-700 px-4 py-2 text-sm font-semibold text-white"
+          className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
         >
           Retry
         </button>
@@ -112,13 +112,13 @@ export default function JoinPartyClient({ joinCode }: JoinPartyClientProps) {
         ) : null}
       </header>
 
-      {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+      {error ? <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
 
       <button
         type="button"
         onClick={() => void handleJoin()}
         disabled={joining}
-        className="min-h-11 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900"
+        className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {joining ? "Joining..." : "Join Party"}
       </button>

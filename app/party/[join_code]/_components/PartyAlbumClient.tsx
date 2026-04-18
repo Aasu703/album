@@ -76,7 +76,7 @@ export default function PartyAlbumClient({ joinCode }: PartyAlbumClientProps) {
         <button
           type="button"
           onClick={() => void loadData()}
-          className="min-h-11 rounded-full bg-rose-700 px-4 py-2 text-sm font-semibold text-white"
+          className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
         >
           Retry
         </button>
@@ -103,7 +103,7 @@ export default function PartyAlbumClient({ joinCode }: PartyAlbumClientProps) {
         <button
           type="button"
           onClick={() => void loadData(true)}
-          className="rounded-full border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200"
+          className="min-h-10 rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-900 transition hover:bg-gray-300"
         >
           Refresh
         </button>

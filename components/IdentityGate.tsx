@@ -57,7 +57,7 @@ export default function IdentityGate({ children }: IdentityGateProps) {
 
   if (isLoading) {
     return (
-      <main className="mx-auto flex w-full max-w-6xl flex-1 items-center justify-center px-4 py-10 sm:px-6">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 items-center justify-center px-4 py-10 sm:px-6">
         <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 text-sm text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
           Loading your workspace...
         </div>
@@ -70,7 +70,7 @@ export default function IdentityGate({ children }: IdentityGateProps) {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 items-center justify-center px-4 py-10 sm:px-6">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 items-center justify-center px-4 py-10 sm:px-6">
       <section className="w-full max-w-md space-y-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <header className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Welcome</h1>
@@ -112,12 +112,12 @@ export default function IdentityGate({ children }: IdentityGateProps) {
             />
           </div>
 
-          {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+          {error ? <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="min-h-11 w-full rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900"
+            className="min-h-11 w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Saving..." : "Continue"}
           </button>

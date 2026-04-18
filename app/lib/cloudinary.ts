@@ -34,28 +34,23 @@ if (cloudinaryEnv) {
 
 export const cloudinary = cloudinarySdk;
 
+/**
+ * Cloudinary URLs look like:
+ * https://res.cloudinary.com/<cloud>/image/upload/v1234567890/folder/filename.jpg
+ * public_id is everything after /upload/vXXXXX/ and before the file extension.
+ */
+export function extractPublicId(cloudinaryUrl: string): string {
+	const match = cloudinaryUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-z]+$/i);
+	return match ? match[1] : "";
+}
+
 /** Extracts a Cloudinary public id from a secure URL for transformations. */
 export function extractPublicIdFromUrl(url: string | null): string | null {
 	if (!url) {
 		return null;
 	}
 
-	const marker = "/upload/";
-	const markerIndex = url.indexOf(marker);
-
-	if (markerIndex === -1) {
-		return null;
-	}
-
-	let publicPart = url.slice(markerIndex + marker.length);
-	publicPart = publicPart.replace(/^v\d+\//, "");
-
-	const [withoutQuery] = publicPart.split("?");
-	const extensionIndex = withoutQuery.lastIndexOf(".");
-
-	if (extensionIndex === -1) {
-		return withoutQuery;
-	}
-
-	return withoutQuery.slice(0, extensionIndex);
+	const [withoutQuery] = url.split("?");
+	const publicId = extractPublicId(withoutQuery);
+	return publicId || null;
 }

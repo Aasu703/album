@@ -93,7 +93,7 @@ export default function IdentityGate({ children }: IdentityGateProps) {
               minLength={2}
               maxLength={80}
               className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500"
-              placeholder="Aayush"
+              placeholder="Salman Khan"
             />
           </div>
 

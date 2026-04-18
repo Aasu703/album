@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useState } from "react";
 
 import type { ApiResponse, Photo } from "@/app/lib/types";
+import { useIdentity } from "@/components/IdentityProvider";
 
 interface AlbumOption {
   id: string;
@@ -16,6 +17,7 @@ interface ImageUploaderProps {
 
 const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_UPLOAD_SIZE_MB = 10;
+const MAX_PHOTO_TITLE_LENGTH = 120;
 const ACCEPTED_FILE_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -61,6 +63,7 @@ function validateImageFile(candidate: File | null): string | null {
 
 /** Lets a user choose an image and upload it to the server upload API route. */
 export default function ImageUploader({ albums }: ImageUploaderProps) {
+  const { identity } = useIdentity();
   const [albumId, setAlbumId] = useState(albums[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -166,9 +169,18 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
       return;
     }
 
+    if (!identity) {
+      setError("Please set your identity first.");
+      setLoading(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("album_id", albumId);
     formData.append("title", title);
+    formData.append("user_id", identity.id);
+    formData.append("user_name", identity.name);
+    formData.append("user_email", identity.email);
     formData.append("file", validatedFile);
 
     try {
@@ -260,9 +272,11 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
           type="text"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
+          maxLength={MAX_PHOTO_TITLE_LENGTH}
           className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500"
           placeholder="Sunset at the beach"
         />
+        <p className="text-xs text-gray-500 dark:text-gray-400">Maximum {MAX_PHOTO_TITLE_LENGTH} characters.</p>
       </div>
 
       <div

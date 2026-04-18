@@ -3,17 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { useIdentity } from "@/components/IdentityProvider";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const links = [
   { href: "/album", label: "Albums" },
   { href: "/upload", label: "Upload" },
+  { href: "/party/create", label: "Create Party" },
 ];
 
 /** Renders the top navigation for album and upload pages. */
 export default function Navbar() {
   const pathname = usePathname();
   const currentPath = pathname ?? "";
+  const { identity, clearIdentity } = useIdentity();
 
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-800 dark:bg-gray-950/90">
@@ -42,6 +45,20 @@ export default function Navbar() {
               </Link>
             );
           })}
+          {identity ? (
+            <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+              <span className="max-w-36 truncate" title={identity.name}>
+                {identity.name}
+              </span>
+              <button
+                type="button"
+                onClick={clearIdentity}
+                className="underline decoration-dotted underline-offset-2"
+              >
+                Not you?
+              </button>
+            </div>
+          ) : null}
           <ThemeToggle />
         </div>
       </nav>

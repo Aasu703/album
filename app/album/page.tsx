@@ -1,17 +1,39 @@
+import { connection } from "next/server";
+
 import AlbumCard from "@/components/AlbumCard";
 
 import AlbumForm from "./_components/AlbumForm";
+import { getSupabaseAdmin } from "@/app/lib/supabase-admin";
 import { supabase } from "@/app/lib/supabase";
 import type { Album } from "@/app/lib/types";
 
 /** Renders all albums and the create-album form. */
 export default async function AlbumPage() {
+    await connection();
+
     const { data, error } = await supabase
     .from("albums")
-        .select("id, name, cover_url, created_at")
+        .select("id, name, cover_url, created_by, created_at")
         .order("created_at", { ascending: false });
 
-    const albums = (data ?? []) as Album[];
+    const baseAlbums = (data ?? []) as Album[];
+    const creatorIds = Array.from(
+        new Set(baseAlbums.map((album) => album.created_by).filter((value): value is string => Boolean(value))),
+    );
+
+    const admin = getSupabaseAdmin();
+
+    const { data: users, error: usersError } = creatorIds.length
+        ? await admin.from("users").select("id, name").in("id", creatorIds)
+        : { data: [], error: null };
+
+    const userRows = (users ?? []) as Array<{ id: string; name: string }>;
+    const creatorMap = new Map(userRows.map((user) => [user.id, user.name]));
+
+    const albums = baseAlbums.map((album) => ({
+        ...album,
+        created_by_name: album.created_by ? (creatorMap.get(album.created_by) ?? "Unknown") : "Unknown",
+    }));
 
     return (
         <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
@@ -22,9 +44,9 @@ export default async function AlbumPage() {
 
             <AlbumForm />
 
-            {error ? (
+            {error || usersError ? (
                 <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
-                    Failed to load albums: {error.message}
+                    Failed to load albums: {error?.message ?? usersError?.message}
                 </p>
             ) : null}
 

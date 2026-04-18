@@ -4,8 +4,21 @@ import type { NextRequest } from "next/server";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
+const MAX_TRACKED_BUCKETS = 5_000;
 
 const buckets = new Map<string, { count: number; resetAt: number }>();
+
+function pruneExpiredBuckets(now: number) {
+  if (buckets.size < MAX_TRACKED_BUCKETS) {
+    return;
+  }
+
+  for (const [key, bucket] of buckets) {
+    if (now > bucket.resetAt) {
+      buckets.delete(key);
+    }
+  }
+}
 
 function getClientKey(request: NextRequest) {
   const forwardedFor = request.headers.get("x-forwarded-for") ?? "";
@@ -32,6 +45,9 @@ function applySecurityHeaders(response: NextResponse) {
 function checkRateLimit(request: NextRequest) {
   const key = getClientKey(request);
   const now = Date.now();
+
+  pruneExpiredBuckets(now);
+
   const current = buckets.get(key);
 
   if (!current || now > current.resetAt) {
@@ -53,7 +69,7 @@ function checkRateLimit(request: NextRequest) {
   };
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const response = NextResponse.next();
   applySecurityHeaders(response);
 

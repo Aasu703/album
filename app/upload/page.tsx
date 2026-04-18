@@ -1,8 +1,12 @@
+import { connection } from "next/server";
+
 import ImageUploader from "./_components/ImageUploader";
 import { supabase } from "@/app/lib/supabase";
 
 /** Renders upload form and passes available albums to the client uploader. */
 export default async function UploadPage() {
+    await connection();
+
     const { data, error } = await supabase
         .from("albums")
         .select("id, name")

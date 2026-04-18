@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 
 import PhotoGrid from "@/components/PhotoGrid";
 
@@ -12,6 +13,8 @@ interface AlbumDetailPageProps {
 
 /** Renders one album and all of its photos from Supabase. */
 export default async function AlbumDetailPage({ params, searchParams }: AlbumDetailPageProps) {
+	await connection();
+
 	const { id } = await params;
 	const resolvedSearchParams = (await searchParams) ?? {};
 	const requestedLimit = Number.parseInt(resolvedSearchParams.limit ?? "80", 10);
@@ -59,7 +62,7 @@ export default async function AlbumDetailPage({ params, searchParams }: AlbumDet
 				</p>
 			) : null}
 
-			<PhotoGrid photos={typedPhotos} />
+			<PhotoGrid photos={typedPhotos} albumId={typedAlbum.id} albumName={typedAlbum.name} />
 		</main>
 	);
 }

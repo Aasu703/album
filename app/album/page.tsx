@@ -1,3 +1,5 @@
+import { connection } from "next/server";
+
 import AlbumCard from "@/components/AlbumCard";
 
 import AlbumForm from "./_components/AlbumForm";
@@ -6,6 +8,8 @@ import type { Album } from "@/app/lib/types";
 
 /** Renders all albums and the create-album form. */
 export default async function AlbumPage() {
+    await connection();
+
     const { data, error } = await supabase
     .from("albums")
         .select("id, name, cover_url, created_at")

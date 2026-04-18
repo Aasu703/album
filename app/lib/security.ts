@@ -37,3 +37,28 @@ export function apiError(message: string, status: number) {
     { status },
   );
 }
+
+/** Builds a typed API success response with optional extra fields. */
+export function apiSuccess<T>(data: T, status = 200, extra: Record<string, unknown> = {}) {
+  return NextResponse.json(
+    {
+      data,
+      error: null,
+      ...extra,
+    } satisfies ApiResponse<T> & Record<string, unknown>,
+    { status },
+  );
+}
+
+/** Resolves a best-effort client IP from request headers. */
+export function getClientIp(request: Request) {
+  const forwardedFor = request.headers.get("x-forwarded-for") ?? "";
+  const forwardedIp = forwardedFor.split(",")[0]?.trim();
+
+  return (
+    forwardedIp ||
+    request.headers.get("x-real-ip")?.trim() ||
+    request.headers.get("cf-connecting-ip")?.trim() ||
+    "unknown"
+  );
+}

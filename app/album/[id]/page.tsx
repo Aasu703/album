@@ -3,6 +3,7 @@ import { connection } from "next/server";
 
 import PhotoGrid from "@/components/PhotoGrid";
 
+import { getSupabaseAdmin } from "@/app/lib/supabase-admin";
 import { supabase } from "@/app/lib/supabase";
 import type { Album, Photo } from "@/app/lib/types";
 
@@ -26,12 +27,12 @@ export default async function AlbumDetailPage({ params, searchParams }: AlbumDet
 		await Promise.all([
 			supabase
 				.from("albums")
-				.select("id, name, cover_url, created_at")
+				.select("id, name, cover_url, created_by, created_at")
 				.eq("id", id)
-				.single(),
+				.maybeSingle(),
 			supabase
 				.from("photos")
-				.select("id, album_id, url, title, created_at")
+				.select("id, album_id, url, title, uploaded_by, uploaded_by_name, created_at")
 				.eq("album_id", id)
 				.limit(safeLimit)
 				.order("created_at", { ascending: false }),
@@ -43,11 +44,20 @@ export default async function AlbumDetailPage({ params, searchParams }: AlbumDet
 
 	const typedAlbum = album as Album;
 	const typedPhotos = (photos ?? []) as Photo[];
+	const admin = getSupabaseAdmin();
+	const { data: creator } = typedAlbum.created_by
+		? await admin.from("users").select("name").eq("id", typedAlbum.created_by).maybeSingle()
+		: { data: null };
+	const creatorRecord = creator as { name?: string } | null;
+	const creatorName = typeof creatorRecord?.name === "string" ? creatorRecord.name : "Unknown";
 
 	return (
 		<main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
 			<section className="space-y-1">
 				<h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{typedAlbum.name}</h1>
+				<p className="text-sm text-gray-600 dark:text-gray-300">
+					Created by {creatorName}
+				</p>
 				<p className="text-sm text-gray-600 dark:text-gray-300">
 					Showing {typedPhotos.length} {typedPhotos.length === 1 ? "photo" : "photos"}
 				</p>

@@ -4,10 +4,14 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import type { Album, ApiResponse } from "@/app/lib/types";
+import { useIdentity } from "@/components/IdentityProvider";
+
+const MAX_ALBUM_NAME_LENGTH = 80;
 
 /** Submits a new album to the albums API and refreshes the listing page. */
 export default function AlbumForm() {
   const router = useRouter();
+  const { identity } = useIdentity();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +22,12 @@ export default function AlbumForm() {
     setLoading(true);
     setError(null);
 
+    if (!identity) {
+      setError("Please set your identity first.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/albums", {
         method: "POST",
@@ -26,6 +36,7 @@ export default function AlbumForm() {
         },
         body: JSON.stringify({
           name,
+          created_by: identity.id,
         }),
       });
 
@@ -62,9 +73,11 @@ export default function AlbumForm() {
           value={name}
           onChange={(event) => setName(event.target.value)}
           required
+          maxLength={MAX_ALBUM_NAME_LENGTH}
           className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-500"
           placeholder="Summer 2026"
         />
+        <p className="text-xs text-gray-500 dark:text-gray-400">Maximum {MAX_ALBUM_NAME_LENGTH} characters.</p>
       </div>
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
       <button

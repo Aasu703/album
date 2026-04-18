@@ -221,6 +221,11 @@ export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps
                 />
                 Select
               </label>
+              {photo.uploaded_by_name ? (
+                <p className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-1 text-[11px] text-white">
+                  By {photo.uploaded_by_name}
+                </p>
+              ) : null}
             </div>
           );
         })}
@@ -234,7 +239,12 @@ export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps
         >
           <div className="w-full max-w-4xl" onClick={(event) => event.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between text-white">
-              <h3 className="text-sm font-medium">{activePhoto.title ?? "Photo"}</h3>
+              <div>
+                <h3 className="text-sm font-medium">{activePhoto.title ?? "Photo"}</h3>
+                {activePhoto.uploaded_by_name ? (
+                  <p className="text-xs text-white/80">Uploaded by {activePhoto.uploaded_by_name}</p>
+                ) : null}
+              </div>
               <button
                 type="button"
                 onClick={() => setActivePhoto(null)}

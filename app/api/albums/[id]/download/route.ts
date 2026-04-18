@@ -1,8 +1,19 @@
 import JSZip from "jszip";
 import { NextResponse } from "next/server";
 
+import { isAllowedRemoteImageUrl } from "@/app/lib/image";
+import { apiError } from "@/app/lib/security";
 import { supabase } from "@/app/lib/supabase";
 import type { Photo } from "@/app/lib/types";
+import {
+  isUuid,
+  MAX_DOWNLOAD_PHOTO_COUNT,
+  MAX_DOWNLOAD_TOTAL_BYTES,
+} from "@/app/lib/validation";
+
+export const runtime = "nodejs";
+
+const DOWNLOAD_FETCH_TIMEOUT_MS = 15_000;
 
 interface DownloadContext {
   params: { id: string } | Promise<{ id: string }>;
@@ -56,62 +67,90 @@ function getRequestedPhotoIds(request: Request) {
     .map((id) => id.trim())
     .filter(Boolean);
 
-  return ids.length > 0 ? ids : null;
+  if (ids.length === 0) {
+    return null;
+  }
+
+  return Array.from(new Set(ids));
 }
 
 /** Builds a ZIP file for all or selected photos in the target album. */
 export async function GET(request: Request, context: DownloadContext) {
-  const { id: albumId } = await Promise.resolve(context.params);
+  try {
+    const { id: albumId } = await Promise.resolve(context.params);
 
-  if (!albumId) {
-    return NextResponse.json({ data: null, error: "Album id is required." }, { status: 400 });
-  }
+    if (!albumId || !isUuid(albumId)) {
+      return apiError("Album id is required and must be valid.", 400);
+    }
 
-  const requestedPhotoIds = getRequestedPhotoIds(request);
+    const requestedPhotoIds = getRequestedPhotoIds(request);
 
-  const [{ data: album, error: albumError }, { data: photos, error: photosError }] =
-    await Promise.all([
-      supabase.from("albums").select("id, name").eq("id", albumId).single(),
-      supabase
-        .from("photos")
-        .select("id, album_id, url, title, created_at")
-        .eq("album_id", albumId)
-        .order("created_at", { ascending: true }),
-    ]);
+    if (requestedPhotoIds && requestedPhotoIds.length > MAX_DOWNLOAD_PHOTO_COUNT) {
+      return apiError(
+        `Too many selected photos. Maximum ${MAX_DOWNLOAD_PHOTO_COUNT} photos per download.`,
+        400,
+      );
+    }
 
-  if (albumError || !album) {
-    return NextResponse.json({ data: null, error: "Album not found." }, { status: 404 });
-  }
+    const [{ data: album, error: albumError }, { data: photos, error: photosError }] =
+      await Promise.all([
+        supabase.from("albums").select("id, name").eq("id", albumId).maybeSingle(),
+        supabase
+          .from("photos")
+          .select("id, album_id, url, title, uploaded_by, uploaded_by_name, created_at")
+          .eq("album_id", albumId)
+          .order("created_at", { ascending: true }),
+      ]);
 
-  if (photosError) {
-    return NextResponse.json({ data: null, error: photosError.message }, { status: 500 });
-  }
+    if (albumError || !album) {
+      return apiError("Album not found.", 404);
+    }
 
-  const albumPhotos = (photos ?? []) as Photo[];
-  const filteredPhotos = requestedPhotoIds
-    ? albumPhotos.filter((photo) => requestedPhotoIds.includes(photo.id))
-    : albumPhotos;
+    if (photosError) {
+      return apiError(photosError.message, 500);
+    }
 
-  if (filteredPhotos.length === 0) {
-    return NextResponse.json(
-      { data: null, error: "No photos found for download." },
-      { status: 404 },
-    );
-  }
+    const albumPhotos = (photos ?? []) as Photo[];
+    const filteredPhotos = requestedPhotoIds
+      ? albumPhotos.filter((photo) => requestedPhotoIds.includes(photo.id))
+      : albumPhotos;
 
-  const zip = new JSZip();
-  const failedIds: string[] = [];
+    const downloadablePhotos = filteredPhotos.filter((photo) => isAllowedRemoteImageUrl(photo.url));
 
-  await Promise.all(
-    filteredPhotos.map(async (photo, index) => {
+    if (downloadablePhotos.length === 0) {
+      return apiError("No eligible photos found for download.", 404);
+    }
+
+    if (downloadablePhotos.length > MAX_DOWNLOAD_PHOTO_COUNT) {
+      return apiError(
+        `Album is too large to download in one request. Maximum ${MAX_DOWNLOAD_PHOTO_COUNT} photos are allowed.`,
+        413,
+      );
+    }
+
+    const zip = new JSZip();
+    const failedIds: string[] = [];
+    let totalBytes = 0;
+
+    for (const [index, photo] of downloadablePhotos.entries()) {
       try {
-        const response = await fetch(photo.url, { cache: "no-store" });
+        const response = await fetch(photo.url, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(DOWNLOAD_FETCH_TIMEOUT_MS),
+        });
+
         if (!response.ok) {
           failedIds.push(photo.id);
-          return;
+          continue;
         }
 
         const arrayBuffer = await response.arrayBuffer();
+        totalBytes += arrayBuffer.byteLength;
+
+        if (totalBytes > MAX_DOWNLOAD_TOTAL_BYTES) {
+          return apiError("Download is too large. Try selecting fewer photos.", 413);
+        }
+
         const extension = getFileExtension(response.headers.get("content-type"), photo.url);
         const titlePart = toSafeFilename(photo.title ?? "", `photo-${index + 1}`);
 
@@ -119,27 +158,28 @@ export async function GET(request: Request, context: DownloadContext) {
       } catch {
         failedIds.push(photo.id);
       }
-    }),
-  );
+    }
 
-  if (Object.keys(zip.files).length === 0) {
-    return NextResponse.json(
-      { data: null, error: "Failed to fetch image files for this album." },
-      { status: 502 },
-    );
+    if (Object.keys(zip.files).length === 0) {
+      return apiError("Failed to fetch image files for this album.", 502);
+    }
+
+    const archive = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
+    const albumName = toSafeFilename(album.name ?? "album", "album");
+    const suffix = requestedPhotoIds ? "selected" : "all";
+
+    const headers = new Headers();
+    headers.set("content-type", "application/zip");
+    headers.set("cache-control", "no-store");
+    headers.set("content-disposition", `attachment; filename="${albumName}-${suffix}.zip"`);
+
+    if (failedIds.length > 0) {
+      headers.set("x-download-warning", `${failedIds.length} images could not be added to the archive.`);
+    }
+
+    return new NextResponse(Buffer.from(archive), { status: 200, headers });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to build download archive.";
+    return apiError(message, 500);
   }
-
-  const archive = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
-  const albumName = toSafeFilename(album.name ?? "album", "album");
-  const suffix = requestedPhotoIds ? "selected" : "all";
-
-  const headers = new Headers();
-  headers.set("content-type", "application/zip");
-  headers.set("content-disposition", `attachment; filename="${albumName}-${suffix}.zip"`);
-
-  if (failedIds.length > 0) {
-    headers.set("x-download-warning", `${failedIds.length} images could not be added to the archive.`);
-  }
-
-  return new NextResponse(Buffer.from(archive), { status: 200, headers });
 }

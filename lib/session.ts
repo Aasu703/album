@@ -39,14 +39,16 @@ export function getSessionOptions(): SessionOptions {
 }
 
 /** Returns the current cookie-backed session object for reading/writing auth state. */
-export async function getSession(_request?: Request): Promise<IronSession<SessionData>> {
+export async function getSession(): Promise<IronSession<SessionData>> {
   const cookieStore = await cookies();
   return getIronSession<SessionData>(cookieStore, getSessionOptions());
 }
 
 /** Reads only the user payload from the active cookie session if available. */
 export async function getSessionUser(request?: Request): Promise<SessionData | null> {
-  const session = await getSession(request);
+  const session = await getSession();
+
+  void request;
 
   if (!session.userId || !session.userEmail || !session.userName || !session.avatarColor) {
     return null;

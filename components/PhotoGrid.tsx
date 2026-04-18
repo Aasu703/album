@@ -5,11 +5,15 @@ import { useMemo, useState } from "react";
 
 import { isAllowedRemoteImageUrl } from "@/app/lib/image";
 import type { Photo } from "@/app/lib/types";
+import { generateAvatarColor } from "@/lib/avatar";
+import Avatar from "@/components/Avatar";
+import ReactionBar from "@/components/ReactionBar";
 
 interface PhotoGridProps {
   photos: Photo[];
   albumId: string;
   albumName: string;
+  newPhotoIds?: string[];
 }
 
 interface PhotoItem {
@@ -67,8 +71,25 @@ function startBlobDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(objectUrl);
 }
 
+/** Returns a stable avatar color for the photo uploader. */
+function getUploaderAvatarColor(photo: Photo) {
+  if (photo.uploaded_by_avatar_color) {
+    return photo.uploaded_by_avatar_color;
+  }
+
+  if (photo.uploaded_by) {
+    return generateAvatarColor(`${photo.uploaded_by}@local.invalid`);
+  }
+
+  if (photo.uploaded_by_name) {
+    return generateAvatarColor(`${photo.uploaded_by_name}@local.invalid`);
+  }
+
+  return "#3A86FF";
+}
+
 /** Renders photo thumbnails, selection controls, and album download actions. */
-export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps) {
+export default function PhotoGrid({ photos, albumId, albumName, newPhotoIds = [] }: PhotoGridProps) {
   const [activePhoto, setActivePhoto] = useState<ActivePhoto | null>(null);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -76,6 +97,7 @@ export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps
   const [isDownloadingAlbumZip, setIsDownloadingAlbumZip] = useState(false);
   const [isDownloadingSelected, setIsDownloadingSelected] = useState(false);
   const [downloadingPhotoId, setDownloadingPhotoId] = useState<string | null>(null);
+  const newPhotoIdSet = useMemo(() => new Set(newPhotoIds), [newPhotoIds]);
 
   const photoItems = useMemo(
     () =>
@@ -290,62 +312,72 @@ export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps
             const { photo, url } = photoItem;
             const checked = selectedPhotoIds.includes(photo.id);
             const isPhotoDownloading = downloadingPhotoId === photo.id;
+            const uploaderName = photo.uploaded_by_name ?? "Unknown";
+            const uploaderColor = getUploaderAvatarColor(photo);
+            const isNewPhoto = newPhotoIdSet.has(photo.id);
 
             return (
-              <div
+              <article
                 key={photo.id}
-                className="group relative aspect-square overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800"
+                className={`overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition dark:border-gray-700 dark:bg-gray-900 ${
+                  isNewPhoto ? "photo-card-enter" : ""
+                }`}
               >
-                <button
-                  type="button"
-                  onClick={() => setActivePhoto({ ...photo, url })}
-                  className="h-full w-full"
-                >
-                  <Image
-                    src={url}
-                    alt={photo.title ?? "Album photo"}
-                    width={300}
-                    height={300}
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    quality={75}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
-                  />
-                </button>
-                <label className="absolute left-2 top-2 inline-flex items-center gap-2 rounded-full bg-black/65 px-2 py-1 text-[11px] text-white">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => togglePhotoSelection(photo.id)}
-                    className="h-3.5 w-3.5 accent-blue-600"
-                  />
-                  Select
-                </label>
-                <button
-                  type="button"
-                  onClick={() => void downloadSinglePhoto(photoItem)}
-                  disabled={
-                    isPhotoDownloading ||
-                    isDownloadingSelected ||
-                    isDownloadingAlbumZip ||
-                    Boolean(downloadingPhotoId)
-                  }
-                  className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  title="Download photo"
-                  aria-label="Download photo"
-                >
-                  {isPhotoDownloading ? (
-                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                  ) : (
-                    <DownloadIcon />
-                  )}
-                </button>
-                {photo.uploaded_by_name ? (
-                  <p className="absolute bottom-2 left-2 rounded-full bg-black/65 px-2 py-1 text-[11px] text-white">
-                    By {photo.uploaded_by_name}
-                  </p>
-                ) : null}
-              </div>
+                <div className="group relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
+                  <button
+                    type="button"
+                    onClick={() => setActivePhoto({ ...photo, url })}
+                    className="h-full w-full"
+                  >
+                    <Image
+                      src={url}
+                      alt={photo.title ?? "Album photo"}
+                      width={300}
+                      height={300}
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      quality={75}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
+                    />
+                  </button>
+                  <label className="absolute left-2 top-2 inline-flex items-center gap-2 rounded-full bg-black/65 px-2 py-1 text-[11px] text-white">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => togglePhotoSelection(photo.id)}
+                      className="h-3.5 w-3.5 accent-blue-600"
+                    />
+                    Select
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void downloadSinglePhoto(photoItem)}
+                    disabled={
+                      isPhotoDownloading ||
+                      isDownloadingSelected ||
+                      isDownloadingAlbumZip ||
+                      Boolean(downloadingPhotoId)
+                    }
+                    className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    title="Download photo"
+                    aria-label="Download photo"
+                  >
+                    {isPhotoDownloading ? (
+                      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                    ) : (
+                      <DownloadIcon />
+                    )}
+                  </button>
+                </div>
+
+                <div className="space-y-2 p-2">
+                  <div className="flex items-center gap-2">
+                    <Avatar name={uploaderName} color={uploaderColor} size="sm" />
+                    <p className="truncate text-xs text-gray-700 dark:text-gray-200">{uploaderName}</p>
+                  </div>
+                  <ReactionBar photoId={photo.id} />
+                </div>
+              </article>
             );
           })}
         </div>
@@ -361,9 +393,14 @@ export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps
             <div className="mb-3 flex items-center justify-between text-white">
               <div>
                 <h3 className="text-sm font-medium">{activePhoto.title ?? "Photo"}</h3>
-                {activePhoto.uploaded_by_name ? (
-                  <p className="text-xs text-white/80">Uploaded by {activePhoto.uploaded_by_name}</p>
-                ) : null}
+                <div className="mt-1 flex items-center gap-2 text-xs text-white/80">
+                  <Avatar
+                    name={activePhoto.uploaded_by_name ?? "Unknown"}
+                    color={getUploaderAvatarColor(activePhoto)}
+                    size="sm"
+                  />
+                  <span>{activePhoto.uploaded_by_name ?? "Unknown"}</span>
+                </div>
               </div>
               <button
                 type="button"
@@ -383,6 +420,9 @@ export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps
                 quality={85}
                 className="h-auto w-full object-contain"
               />
+            </div>
+            <div className="mt-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+              <ReactionBar photoId={activePhoto.id} />
             </div>
           </div>
         </div>

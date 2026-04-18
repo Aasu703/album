@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     }
 
     const avatarColor = generateAvatarColor(resolvedUser.email);
-    const session = await getSession(request);
+    const session = await getSession();
 
     session.userId = resolvedUser.id;
     session.userName = resolvedUser.name;

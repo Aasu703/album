@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const session = await getSession(request);
+    const session = await getSession();
     session.destroy();
 
     return NextResponse.json({ success: true }, { status: 200 });

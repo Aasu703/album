@@ -6,6 +6,7 @@ import PhotoGrid from "@/components/PhotoGrid";
 import { getSupabaseAdmin } from "@/app/lib/supabase-admin";
 import { supabase } from "@/app/lib/supabase";
 import type { Album, Photo } from "@/app/lib/types";
+import { generateAvatarColor } from "@/lib/avatar";
 
 interface AlbumDetailPageProps {
 	params: Promise<{ id: string }>;
@@ -45,6 +46,22 @@ export default async function AlbumDetailPage({ params, searchParams }: AlbumDet
 	const typedAlbum = album as Album;
 	const typedPhotos = (photos ?? []) as Photo[];
 	const admin = getSupabaseAdmin();
+	const uploaderIds = Array.from(
+		new Set(typedPhotos.map((photo) => photo.uploaded_by).filter((value): value is string => Boolean(value))),
+	);
+	const uploaderRowsResult = uploaderIds.length
+		? await admin.from("users").select("id, email").in("id", uploaderIds)
+		: { data: [], error: null };
+	const uploaderColorMap = new Map(
+		((uploaderRowsResult.data ?? []) as Array<{ id: string; email: string }>).map((row) => [
+			row.id,
+			generateAvatarColor(row.email),
+		]),
+	);
+	const typedPhotosWithAvatar: Photo[] = typedPhotos.map((photo) => ({
+		...photo,
+		uploaded_by_avatar_color: photo.uploaded_by ? uploaderColorMap.get(photo.uploaded_by) ?? null : null,
+	}));
 	const { data: creator } = typedAlbum.created_by
 		? await admin.from("users").select("name").eq("id", typedAlbum.created_by).maybeSingle()
 		: { data: null };
@@ -66,13 +83,13 @@ export default async function AlbumDetailPage({ params, searchParams }: AlbumDet
 				</p>
 			</section>
 
-			{photosError ? (
+			{photosError || uploaderRowsResult.error ? (
 				<p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
-					Failed to load photos: {photosError.message}
+					Failed to load photos: {photosError?.message ?? uploaderRowsResult.error?.message}
 				</p>
 			) : null}
 
-			<PhotoGrid photos={typedPhotos} albumId={typedAlbum.id} albumName={typedAlbum.name} />
+			<PhotoGrid photos={typedPhotosWithAvatar} albumId={typedAlbum.id} albumName={typedAlbum.name} />
 		</main>
 	);
 }

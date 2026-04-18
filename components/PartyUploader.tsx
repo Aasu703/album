@@ -82,9 +82,6 @@ export default function PartyUploader({ joinCode, onUploaded }: PartyUploaderPro
     const formData = new FormData();
     formData.append("party_join_code", joinCode);
     formData.append("title", title);
-    formData.append("user_id", identity.id);
-    formData.append("user_name", identity.name);
-    formData.append("user_email", identity.email);
     formData.append("file", selectedFile);
 
     try {

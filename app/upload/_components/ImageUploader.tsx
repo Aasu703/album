@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import confetti from "canvas-confetti";
 
 import type { ApiResponse, Photo } from "@/app/lib/types";
 import { useIdentity } from "@/components/IdentityProvider";
@@ -31,6 +32,16 @@ const FILE_INPUT_ACCEPT = "image/*,.heic,.heif";
 interface UploadSuccessResponse extends ApiResponse<Photo> {
   success: true;
   url: string;
+}
+
+/** Plays a celebratory burst after a successful upload. */
+function fireConfetti() {
+  confetti({
+    particleCount: 120,
+    spread: 80,
+    origin: { y: 0.6 },
+    colors: ["#FF6B6B", "#4D96FF", "#6BCB77", "#FFC93C", "#C77DFF"],
+  });
 }
 
 function isAcceptedFileType(candidate: File) {
@@ -73,7 +84,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   const selectedAlbumName = useMemo(
     () => albums.find((album) => album.id === albumId)?.name ?? "",
@@ -94,6 +105,20 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
     };
   }, [file]);
 
+  useEffect(() => {
+    if (!successBanner) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setSuccessBanner(null);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [successBanner]);
+
   function setSelectedFile(nextFile: File | null) {
     const validationMessage = validateImageFile(nextFile);
 
@@ -105,7 +130,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
 
     setFile(nextFile);
     setUploadedUrl(null);
-    setSuccess(null);
+    setSuccessBanner(null);
     setError(null);
     setUploadProgress(0);
   }
@@ -144,7 +169,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
     setLoading(true);
     setUploadProgress(0);
     setError(null);
-    setSuccess(null);
+    setSuccessBanner(null);
     setUploadedUrl(null);
 
     const validationMessage = validateImageFile(file);
@@ -178,9 +203,6 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
     const formData = new FormData();
     formData.append("album_id", albumId);
     formData.append("title", title);
-    formData.append("user_id", identity.id);
-    formData.append("user_name", identity.name);
-    formData.append("user_email", identity.email);
     formData.append("file", validatedFile);
 
     try {
@@ -230,7 +252,8 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
 
       setUploadProgress(100);
       setUploadedUrl(payload.url);
-      setSuccess("Photo uploaded successfully.");
+      setSuccessBanner("Photo uploaded! 🎉");
+      fireConfetti();
       setTitle("");
       setFile(null);
     } catch (uploadError) {
@@ -339,9 +362,15 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
 
       {error ? <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
 
-      {success && uploadedUrl ? (
+      {successBanner ? (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-200">
+          {successBanner}
+        </div>
+      ) : null}
+
+      {uploadedUrl ? (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950/50">
-          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{success}</p>
+          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Latest upload</p>
           <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
             Album: {selectedAlbumName || "Selected album"}
           </p>

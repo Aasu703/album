@@ -10,7 +10,7 @@ interface IdentityContextValue {
   identity: UserIdentity | null;
   isLoading: boolean;
   setIdentity: (value: UserIdentity) => void;
-  clearIdentity: () => void;
+  clearIdentity: () => Promise<void>;
 }
 
 const IdentityContext = createContext<IdentityContextValue | null>(null);
@@ -29,7 +29,9 @@ function isUserIdentity(value: unknown): value is UserIdentity {
     typeof candidate.name === "string" &&
     candidate.name.length > 0 &&
     typeof candidate.email === "string" &&
-    candidate.email.length > 0
+    candidate.email.length > 0 &&
+    typeof candidate.avatarColor === "string" &&
+    candidate.avatarColor.length > 0
   );
 }
 
@@ -48,20 +50,55 @@ function readStoredIdentity() {
   }
 }
 
-/** Provides persistent local user identity for unauthenticated guest flows. */
+/** Provides cookie-backed identity with localStorage as a fast client-side cache. */
 export default function IdentityProvider({ children }: { children: React.ReactNode }) {
   const [identity, setIdentityState] = useState<UserIdentity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const stored = readStoredIdentity();
-      setIdentityState(stored);
-      setIsLoading(false);
-    }, 0);
+    const storedIdentity = readStoredIdentity();
+    if (storedIdentity) {
+      setIdentityState(storedIdentity);
+    }
+
+    setIsLoading(false);
+
+    const controller = new AbortController();
+    let active = true;
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Session check failed (${response.status}).`);
+        }
+
+        const payload = (await response.json()) as { user: UserIdentity | null };
+        if (!active) {
+          return;
+        }
+
+        if (payload.user && isUserIdentity(payload.user)) {
+          setIdentityState(payload.user);
+          window.localStorage.setItem(IDENTITY_STORAGE_KEY, JSON.stringify(payload.user));
+          return;
+        }
+
+        setIdentityState(null);
+        window.localStorage.removeItem(IDENTITY_STORAGE_KEY);
+      } catch {
+        // Preserve cached identity when session check fails due to network/transient issues.
+      }
+    })();
 
     return () => {
-      window.clearTimeout(timer);
+      active = false;
+      controller.abort();
     };
   }, []);
 
@@ -70,9 +107,17 @@ export default function IdentityProvider({ children }: { children: React.ReactNo
     window.localStorage.setItem(IDENTITY_STORAGE_KEY, JSON.stringify(value));
   }
 
-  function clearIdentity() {
+  async function clearIdentity() {
     setIdentityState(null);
     window.localStorage.removeItem(IDENTITY_STORAGE_KEY);
+
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+    } catch {
+      // Clearing local identity is still best-effort even if logout request fails.
+    }
   }
 
   const contextValue = useMemo<IdentityContextValue>(

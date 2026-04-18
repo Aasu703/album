@@ -2,11 +2,17 @@
 
 import { FormEvent, useState } from "react";
 
-import type { ApiResponse, UserIdentity } from "@/app/lib/types";
+import type { UserIdentity } from "@/app/lib/types";
 import { useIdentity } from "@/components/IdentityProvider";
 
 interface IdentityGateProps {
   children: React.ReactNode;
+}
+
+interface LoginResponse {
+  success: boolean;
+  user?: UserIdentity;
+  error?: string;
 }
 
 /** Blocks app usage until a lightweight persistent user identity is established. */
@@ -28,7 +34,7 @@ export default function IdentityGate({ children }: IdentityGateProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/users/identify", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -39,13 +45,13 @@ export default function IdentityGate({ children }: IdentityGateProps) {
         }),
       });
 
-      const payload = (await response.json()) as ApiResponse<UserIdentity>;
+      const payload = (await response.json()) as LoginResponse;
 
-      if (!response.ok || payload.error || !payload.data) {
+      if (!response.ok || !payload.success || !payload.user) {
         throw new Error(payload.error ?? "Failed to establish identity.");
       }
 
-      setIdentity(payload.data);
+      setIdentity(payload.user);
       setName("");
       setEmail("");
     } catch (submitError) {

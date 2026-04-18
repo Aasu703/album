@@ -20,14 +20,14 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-800 dark:bg-gray-950/90">
-      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+      <nav className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6">
         <Link
           href="/album"
           className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100"
         >
           Personal Album
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {links.map((link) => {
             const isActive = currentPath.startsWith(link.href);
 
@@ -37,8 +37,8 @@ export default function Navbar() {
                 href={link.href}
                 className={`inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-medium transition ${
                   isActive
-                    ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900"
-                    : "bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-200 text-gray-900 hover:bg-gray-300"
                 }`}
               >
                 {link.label}
@@ -53,7 +53,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={clearIdentity}
-                className="underline decoration-dotted underline-offset-2"
+                className="rounded-full bg-gray-200 px-2 py-1 text-gray-900 transition hover:bg-gray-300"
               >
                 Not you?
               </button>

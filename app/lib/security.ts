@@ -50,6 +50,23 @@ export function apiSuccess<T>(data: T, status = 200, extra: Record<string, unkno
   );
 }
 
+/** Validates x-admin-password header against ADMIN_PASSWORD env for admin routes. */
+export function requireAdminPassword(request: Request) {
+  const expected = process.env.ADMIN_PASSWORD?.trim();
+
+  if (!expected) {
+    return apiError("Admin password is not configured.", 500);
+  }
+
+  const received = request.headers.get("x-admin-password")?.trim();
+
+  if (!received || received !== expected) {
+    return apiError("Unauthorized.", 401);
+  }
+
+  return null;
+}
+
 /** Resolves a best-effort client IP from request headers. */
 export function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for") ?? "";

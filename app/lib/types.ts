@@ -44,3 +44,50 @@ export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
 }
+
+export interface AdminRecentAlbum {
+  id: string;
+  name: string;
+  created_at: string;
+  created_by_name: string | null;
+}
+
+export interface AdminRecentPhoto {
+  id: string;
+  title: string | null;
+  url: string;
+  created_at: string;
+  album_name: string | null;
+  uploaded_by_name: string | null;
+}
+
+export interface AdminStats {
+  total_albums: number;
+  total_photos: number;
+  total_users: number;
+  total_parties: number;
+  recent_albums: AdminRecentAlbum[];
+  recent_photos: AdminRecentPhoto[];
+}
+
+export interface AdminAlbumRow extends Album {
+  photo_count: number;
+  photo_urls: string[];
+}
+
+export interface AdminPhotoRow extends Photo {
+  album_name: string | null;
+}
+
+export interface AdminUserRow {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  album_count: number;
+  photo_count: number;
+}
+
+export interface AdminPartyRow extends Party {
+  member_count: number;
+}

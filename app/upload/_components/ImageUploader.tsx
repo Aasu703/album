@@ -295,7 +295,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">or</p>
         <label
           htmlFor="photo-file"
-          className="mt-3 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white dark:bg-gray-100 dark:text-gray-900"
+          className="mt-3 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
         >
           Click or tap to select photo
         </label>
@@ -337,7 +337,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+      {error ? <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
 
       {success && uploadedUrl ? (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950/50">
@@ -360,7 +360,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
       <button
         type="submit"
         disabled={loading || albums.length === 0}
-        className="min-h-11 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900"
+        className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Uploading photo..." : "Upload photo"}
       </button>

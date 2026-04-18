@@ -172,7 +172,7 @@ export default function PartyUploader({ joinCode, onUploaded }: PartyUploaderPro
           type="file"
           accept="image/*,.heic,.heif"
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none file:mr-3 file:rounded-md file:border-0 file:bg-gray-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:file:bg-gray-100 dark:file:text-gray-900"
+          className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:file:bg-blue-600 dark:file:text-white"
         />
       </div>
 
@@ -192,13 +192,13 @@ export default function PartyUploader({ joinCode, onUploaded }: PartyUploaderPro
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+      {error ? <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
       {success ? <p className="text-sm text-emerald-700">{success}</p> : null}
 
       <button
         type="submit"
         disabled={loading}
-        className="min-h-11 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900"
+        className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Uploading..." : "Upload photo"}
       </button>

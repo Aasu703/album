@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import Link from "next/link";
 
 import AlbumCard from "@/components/AlbumCard";
 
@@ -36,7 +37,7 @@ export default async function AlbumPage() {
     }));
 
     return (
-        <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
+        <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
             <section className="space-y-1">
                 <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">My Albums</h1>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Create albums and keep your memories organized.</p>
@@ -55,6 +56,12 @@ export default async function AlbumPage() {
                     <AlbumCard key={album.id} album={album} />
                 ))}
             </section>
+
+            {!error && !usersError && albums.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-gray-300 bg-white p-4 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                    No albums yet. Create one! <Link href="/album" className="font-semibold text-blue-600 hover:text-blue-700">Start here</Link>
+                </p>
+            ) : null}
         </main>
     );
 }

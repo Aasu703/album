@@ -37,6 +37,7 @@ Required:
 - CLOUDINARY_API_SECRET
 - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 - NEXT_PUBLIC_APP_URL
+- ADMIN_PASSWORD
 
 Optional:
 
@@ -69,12 +70,14 @@ npm run build
 ## Deploy (Vercel)
 
 1. Add all required environment variables in project settings.
+   - Include `ADMIN_PASSWORD` for `/admin` and `/api/admin/*` access.
 2. Deploy with npm run build.
 3. Verify these flows in production:
    - identity onboarding
    - album create/upload
    - party create/join/upload
    - ZIP download
+   - admin login and admin management routes
 
 ## Security Notes
 

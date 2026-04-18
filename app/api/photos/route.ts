@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   cloudinary,
-  extractPublicIdFromUrl,
+  extractPublicId,
   hasCloudinaryCredentials,
 } from "@/app/lib/cloudinary";
 import { apiError, isTrustedOrigin } from "@/app/lib/security";
@@ -19,7 +19,7 @@ async function deleteCloudinaryAsset(photoUrl: string) {
     return null;
   }
 
-  const publicId = extractPublicIdFromUrl(photoUrl);
+  const publicId = extractPublicId(photoUrl);
   if (!publicId) {
     return null;
   }

@@ -144,12 +144,12 @@ export default function PartyCreateForm() {
           />
         </div>
 
-        {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+        {error ? <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
 
         <button
           type="submit"
           disabled={loading}
-          className="min-h-11 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900"
+          className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Creating party..." : "Create Party"}
         </button>
@@ -164,7 +164,7 @@ export default function PartyCreateForm() {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/party/${createdParty.join_code}`}
-              className="min-h-11 rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
+              className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               Open party album
             </Link>
@@ -172,7 +172,7 @@ export default function PartyCreateForm() {
               type="button"
               onClick={handleDownloadQrCode}
               disabled={!qrCodeDataUrl}
-              className="min-h-11 rounded-full border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-800 disabled:opacity-60 dark:text-emerald-200"
+              className="min-h-11 rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-300 disabled:opacity-60"
             >
               Download QR Code
             </button>

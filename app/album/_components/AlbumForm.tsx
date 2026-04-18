@@ -79,11 +79,11 @@ export default function AlbumForm() {
         />
         <p className="text-xs text-gray-500 dark:text-gray-400">Maximum {MAX_ALBUM_NAME_LENGTH} characters.</p>
       </div>
-      {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+      {error ? <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
       <button
         type="submit"
         disabled={loading}
-        className="min-h-11 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900"
+        className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Creating..." : "Create album"}
       </button>

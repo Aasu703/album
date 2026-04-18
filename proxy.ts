@@ -27,19 +27,41 @@ function getClientKey(request: NextRequest) {
   return `${ip}:${request.nextUrl.pathname}`;
 }
 
+function getContentSecurityPolicy() {
+  const allowUnsafeEval =
+    process.env.NODE_ENV !== "production" ||
+    process.env.CSP_ALLOW_UNSAFE_EVAL === "true";
+  const scriptSrc = [
+    "'self'",
+    "'unsafe-inline'",
+    allowUnsafeEval ? "'unsafe-eval'" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return [
+    "default-src 'self'",
+    "img-src 'self' https://res.cloudinary.com data: blob:",
+    `script-src ${scriptSrc}`,
+    "style-src 'self' 'unsafe-inline'",
+    "connect-src 'self' https://*.supabase.co https://api.cloudinary.com",
+    "font-src 'self' data:",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; ");
+}
+
 function applySecurityHeaders(response: NextResponse) {
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "no-referrer");
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()") ;
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
   response.headers.set("Cross-Origin-Embedder-Policy", "unsafe-none");
   response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-  response.headers.set(
-    "Content-Security-Policy",
-    "default-src 'self'; img-src 'self' https://res.cloudinary.com data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co https://api.cloudinary.com; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
-  );
+  response.headers.set("Content-Security-Policy", getContentSecurityPolicy());
 }
 
 function checkRateLimit(request: NextRequest) {

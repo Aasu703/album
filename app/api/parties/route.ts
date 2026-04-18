@@ -4,17 +4,14 @@ import { apiError, apiSuccess, isTrustedOrigin } from "@/app/lib/security";
 import { getSupabaseAdmin } from "@/app/lib/supabase-admin";
 import type { PartyWithJoinUrl } from "@/app/lib/types";
 import {
-  isUuid,
   validateOptionalPartyDescription,
   validatePartyName,
-  validateUserName,
 } from "@/app/lib/validation";
+import { getSessionUser } from "@/lib/session";
 
 interface CreatePartyBody {
   name?: string;
   description?: string;
-  host_id?: string;
-  host_name?: string;
 }
 
 const JOIN_CODE_LENGTH = 6;
@@ -99,14 +96,9 @@ export async function POST(request: Request) {
       return apiError(descriptionError, 400);
     }
 
-    const hostId = body.host_id?.trim();
-    if (!hostId || !isUuid(hostId)) {
-      return apiError("host_id must be a valid identifier.", 400);
-    }
-
-    const { value: hostName, error: hostNameError } = validateUserName(body.host_name);
-    if (hostNameError || !hostName) {
-      return apiError(hostNameError ?? "host_name is required.", 400);
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser) {
+      return apiError("Unauthorized.", 401);
     }
 
     const admin = getSupabaseAdmin();
@@ -114,7 +106,7 @@ export async function POST(request: Request) {
     const { data: host, error: hostError } = await admin
       .from("users")
       .select("id, name")
-      .eq("id", hostId)
+      .eq("id", sessionUser.userId)
       .maybeSingle();
 
     if (hostError) {

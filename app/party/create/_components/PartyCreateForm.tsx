@@ -74,8 +74,6 @@ export default function PartyCreateForm() {
         body: JSON.stringify({
           name,
           description,
-          host_id: identity.id,
-          host_name: identity.name,
         }),
       });
 

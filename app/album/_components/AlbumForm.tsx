@@ -36,7 +36,6 @@ export default function AlbumForm() {
         },
         body: JSON.stringify({
           name,
-          created_by: identity.id,
         }),
       });
 

@@ -4,11 +4,11 @@ import { apiError, apiSuccess, isTrustedOrigin } from "@/app/lib/security";
 import { getSupabaseAdmin } from "@/app/lib/supabase-admin";
 import { supabase } from "@/app/lib/supabase";
 import type { Album, ApiResponse } from "@/app/lib/types";
-import { isUuid, validateAlbumName } from "@/app/lib/validation";
+import { validateAlbumName } from "@/app/lib/validation";
+import { getSessionUser } from "@/lib/session";
 
 interface CreateAlbumBody {
   name?: string;
-  created_by?: string;
 }
 
 /** Fetches all albums ordered by creation date. */
@@ -55,9 +55,9 @@ export async function POST(request: Request) {
       return apiError(nameError ?? "Album name is required.", 400);
     }
 
-    const createdBy = body.created_by?.trim();
-    if (!createdBy || !isUuid(createdBy)) {
-      return apiError("created_by must be a valid identifier.", 400);
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser) {
+      return apiError("Unauthorized.", 401);
     }
 
     const admin = getSupabaseAdmin();
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     const { data: user, error: userError } = await admin
       .from("users")
       .select("id")
-      .eq("id", createdBy)
+      .eq("id", sessionUser.userId)
       .maybeSingle();
 
     if (userError) {
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
       .insert({
         name,
         cover_url: null,
-        created_by: createdBy,
+        created_by: sessionUser.userId,
       })
       .select("id, name, cover_url, created_by, created_at")
       .single();

@@ -2,12 +2,23 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import confetti from "canvas-confetti";
 
 import type { ApiResponse, PartyWithJoinUrl } from "@/app/lib/types";
 import { useIdentity } from "@/components/IdentityProvider";
 
 interface JoinPartyClientProps {
   joinCode: string;
+}
+
+/** Plays a subtle celebration burst when someone joins a party for the first time. */
+function fireJoinConfetti() {
+  confetti({
+    particleCount: 60,
+    spread: 65,
+    origin: { y: 0.65 },
+    colors: ["#FF6B6B", "#4D96FF", "#6BCB77", "#FFC93C", "#C77DFF"],
+  });
 }
 
 /** Loads party details and lets the current user join with one action. */
@@ -55,19 +66,16 @@ export default function JoinPartyClient({ joinCode }: JoinPartyClientProps) {
     try {
       const response = await fetch(`/api/parties/${joinCode}/join`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: identity.id,
-          user_name: identity.name,
-        }),
       });
 
-      const payload = (await response.json()) as ApiResponse<{ joined: boolean }>;
+      const payload = (await response.json()) as ApiResponse<{ joined: boolean; first_join?: boolean }>;
 
       if (!response.ok || payload.error) {
         throw new Error(payload.error ?? "Unable to join this party.");
+      }
+
+      if (payload.data?.first_join) {
+        fireJoinConfetti();
       }
 
       router.push(`/party/${joinCode}`);

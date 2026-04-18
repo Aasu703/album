@@ -6,6 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 import ConfirmModal from "@/app/admin/_components/ConfirmModal";
 import { adminRequest, clearAdminSession } from "@/app/lib/admin-client";
 import type { AdminUserRow } from "@/app/lib/types";
+import Avatar from "@/components/Avatar";
+import { generateAvatarColor } from "@/lib/avatar";
 
 /** Admin users management view with safe delete confirmations. */
 export default function AdminUsersPage() {
@@ -126,7 +128,12 @@ export default function AdminUsersPage() {
             <tbody>
               {users.map((user) => (
                 <tr key={user.id} className="border-t border-gray-200 dark:border-gray-700">
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{user.name}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                    <div className="flex items-center gap-2">
+                      <Avatar name={user.name} color={generateAvatarColor(user.email)} size="sm" />
+                      <span>{user.name}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{user.email}</td>
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{user.album_count}</td>
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{user.photo_count}</td>

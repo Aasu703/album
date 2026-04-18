@@ -2,6 +2,7 @@ import { apiError, apiSuccess, isTrustedOrigin } from "@/app/lib/security";
 import { getSupabaseAdmin } from "@/app/lib/supabase-admin";
 import type { UserIdentity } from "@/app/lib/types";
 import { validateEmail, validateUserName } from "@/app/lib/validation";
+import { generateAvatarColor } from "@/lib/avatar";
 
 interface IdentifyBody {
   name?: string;
@@ -58,10 +59,24 @@ export async function POST(request: Request) {
           return apiError(updateError.message, 500);
         }
 
-        return apiSuccess(updatedUser as UserIdentity, 200);
+        const mappedUpdatedUser = updatedUser as { id: string; name: string; email: string };
+        return apiSuccess(
+          {
+            ...mappedUpdatedUser,
+            avatarColor: generateAvatarColor(mappedUpdatedUser.email),
+          } satisfies UserIdentity,
+          200,
+        );
       }
 
-      return apiSuccess(existingUser as UserIdentity, 200);
+      const mappedExistingUser = existingUser as { id: string; name: string; email: string };
+      return apiSuccess(
+        {
+          ...mappedExistingUser,
+          avatarColor: generateAvatarColor(mappedExistingUser.email),
+        } satisfies UserIdentity,
+        200,
+      );
     }
 
     const { data: createdUser, error: createError } = await admin
@@ -83,13 +98,27 @@ export async function POST(request: Request) {
           return apiError(racedUserError?.message ?? "Failed to restore identity.", 500);
         }
 
-        return apiSuccess(racedUser as UserIdentity, 200);
+        const mappedRacedUser = racedUser as { id: string; name: string; email: string };
+        return apiSuccess(
+          {
+            ...mappedRacedUser,
+            avatarColor: generateAvatarColor(mappedRacedUser.email),
+          } satisfies UserIdentity,
+          200,
+        );
       }
 
       return apiError(createError.message, 500);
     }
 
-    return apiSuccess(createdUser as UserIdentity, 201);
+    const mappedCreatedUser = createdUser as { id: string; name: string; email: string };
+    return apiSuccess(
+      {
+        ...mappedCreatedUser,
+        avatarColor: generateAvatarColor(mappedCreatedUser.email),
+      } satisfies UserIdentity,
+      201,
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to establish identity.";
     return apiError(message, 500);

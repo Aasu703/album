@@ -4,10 +4,14 @@ A production-focused personal photo album app built with Next.js App Router, Sup
 
 ## Features
 
-- Identity onboarding (name + email) without external auth libraries
-- Persistent local identity restore flow
+- Cookie-based identity session (iron-session) with local identity cache
+- Identity onboarding (name + email) with secure session login
+- Deterministic color avatars from user email hash
 - Albums with creator attribution
 - Photo uploads with uploader attribution
+- Emoji reactions on photos (party + album grids)
+- Confetti delight on first-time party join and upload success
+- Live party feed polling with "new photos" badge updates
 - Full album or selected-photo ZIP downloads
 - Party/event creation with 6-character join code
 - QR-based sharing for guest participation
@@ -37,6 +41,7 @@ Required:
 - CLOUDINARY_API_SECRET
 - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 - NEXT_PUBLIC_APP_URL
+- SESSION_SECRET
 - ADMIN_PASSWORD
 
 Optional:
@@ -71,11 +76,13 @@ npm run build
 
 1. Add all required environment variables in project settings.
    - Include `ADMIN_PASSWORD` for `/admin` and `/api/admin/*` access.
+   - Include `SESSION_SECRET` for encrypted identity sessions.
 2. Deploy with npm run build.
 3. Verify these flows in production:
    - identity onboarding
    - album create/upload
    - party create/join/upload
+   - reactions + live party feed updates
    - ZIP download
    - admin login and admin management routes
 

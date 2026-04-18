@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import Avatar from "@/components/Avatar";
 import { useIdentity } from "@/components/IdentityProvider";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -47,12 +48,13 @@ export default function Navbar() {
           })}
           {identity ? (
             <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
-              <span className="max-w-36 truncate" title={identity.name}>
+              <Avatar name={identity.name} color={identity.avatarColor} size="sm" />
+              <span className="max-w-36 truncate font-medium" title={identity.name}>
                 {identity.name}
               </span>
               <button
                 type="button"
-                onClick={clearIdentity}
+                onClick={() => void clearIdentity()}
                 className="rounded-full bg-gray-200 px-2 py-1 text-gray-900 transition hover:bg-gray-300"
               >
                 Not you?

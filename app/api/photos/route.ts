@@ -10,6 +10,8 @@ import { getSupabaseAdmin } from "@/app/lib/supabase-admin";
 import { supabase } from "@/app/lib/supabase";
 import type { ApiResponse, Photo } from "@/app/lib/types";
 import { isUuid } from "@/app/lib/validation";
+import { generateAvatarColor } from "@/lib/avatar";
+import { getSessionUser } from "@/lib/session";
 
 export const runtime = "nodejs";
 
@@ -65,10 +67,35 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json(
-      { data: (data ?? []) as Photo[], error: null } satisfies ApiResponse<Photo[]>,
-      { status: 200 },
+    const photos = (data ?? []) as Photo[];
+    const uploaderIds = Array.from(
+      new Set(photos.map((photo) => photo.uploaded_by).filter((value): value is string => Boolean(value))),
     );
+
+    const admin = getSupabaseAdmin();
+    const uploaderRowsResult = uploaderIds.length
+      ? await admin.from("users").select("id, email").in("id", uploaderIds)
+      : { data: [], error: null };
+
+    if (uploaderRowsResult.error) {
+      return apiError(uploaderRowsResult.error.message, 500);
+    }
+
+    const colorByUserId = new Map(
+      ((uploaderRowsResult.data ?? []) as Array<{ id: string; email: string }>).map((row) => [
+        row.id,
+        generateAvatarColor(row.email),
+      ]),
+    );
+
+    const payload: Photo[] = photos.map((photo) => ({
+      ...photo,
+      uploaded_by_avatar_color: photo.uploaded_by
+        ? colorByUserId.get(photo.uploaded_by) ?? null
+        : null,
+    }));
+
+    return NextResponse.json({ data: payload, error: null } satisfies ApiResponse<Photo[]>, { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch photos.";
     return apiError(message, 500);
@@ -86,15 +113,16 @@ export async function DELETE(request: Request) {
     const queryId = requestUrl.searchParams.get("id")?.trim();
 
     let bodyId: string | undefined;
-    let actorId: string | undefined;
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser) {
+      return apiError("Unauthorized.", 401);
+    }
 
     try {
       const body = (await request.json()) as { id?: string; user_id?: string };
       bodyId = body.id?.trim();
-      actorId = body.user_id?.trim();
     } catch {
       bodyId = undefined;
-      actorId = undefined;
     }
 
     const photoId = queryId ?? bodyId;
@@ -103,25 +131,7 @@ export async function DELETE(request: Request) {
       return apiError("Photo id is required.", 400);
     }
 
-    if (!actorId || !isUuid(actorId)) {
-      return apiError("user_id is required for delete operations.", 400);
-    }
-
-    const admin = getSupabaseAdmin();
-
-    const { data: actor, error: actorError } = await admin
-      .from("users")
-      .select("id")
-      .eq("id", actorId)
-      .maybeSingle();
-
-    if (actorError) {
-      return apiError(actorError.message, 500);
-    }
-
-    if (!actor) {
-      return apiError("Actor identity not found.", 404);
-    }
+    const actorId = sessionUser.userId;
 
     const { data: existingPhoto, error: existingPhotoError } = await supabase
       .from("photos")

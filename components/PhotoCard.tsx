@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 
+import { toDisplayImageUrl } from "@/app/lib/image";
 import type { Photo } from "@/app/lib/types";
 import Avatar from "@/components/Avatar";
 import ReactionBar from "@/components/ReactionBar";
@@ -17,19 +19,42 @@ interface PhotoCardProps {
 /** Masonry-friendly photo card with overlay metadata and reactions. */
 export default function PhotoCard({ photo, isNew = false, isDownloading = false, onOpen, onDownload }: PhotoCardProps) {
   const createdAtLabel = photo.created_at ? new Date(photo.created_at).toLocaleDateString() : "";
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasImageError, setHasImageError] = useState(false);
+  const displayUrl = toDisplayImageUrl(photo.url) ?? photo.url;
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("photo url:", photo.url);
+  }
 
   return (
     <article className={`group mb-4 break-inside-avoid overflow-hidden rounded-2xl bg-white shadow-sm transition ${isNew ? "photo-card-enter" : ""}`}>
       <div className="relative">
-        <button type="button" onClick={onOpen} className="block w-full text-left">
-          <Image
-            src={photo.url}
-            alt={photo.title ?? "Album photo"}
-            width={1000}
-            height={1200}
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="h-auto w-full object-cover"
-          />
+        <button type="button" onClick={onOpen} className="block w-full text-left" disabled={hasImageError}>
+          <div className="relative min-h-56 w-full bg-[#F1F3F5]">
+            {!isLoaded ? <div className="absolute inset-0 animate-pulse bg-[#E9ECEF]" /> : null}
+
+            {!hasImageError ? (
+              <Image
+                src={displayUrl}
+                alt={photo.title ?? "Album photo"}
+                width={1000}
+                height={1200}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className={`h-auto w-full object-cover transition-opacity duration-300 ${isLoaded ? "opacity-100" : "opacity-0"}`}
+                onLoad={() => setIsLoaded(true)}
+                onError={() => {
+                  setHasImageError(true);
+                  setIsLoaded(true);
+                }}
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F8F9FA] text-[#6C757D]">
+                <span className="text-3xl">🖼️</span>
+                <span className="text-xs font-medium">Failed to load image</span>
+              </div>
+            )}
+          </div>
         </button>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden translate-y-1 bg-linear-to-t from-black/80 via-black/35 to-transparent p-3 text-white opacity-0 transition duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 md:block">

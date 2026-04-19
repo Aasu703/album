@@ -1,16 +1,24 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import type { UserIdentity } from "@/app/lib/types";
+import IdentitySheet from "@/components/IdentitySheet";
 
 const IDENTITY_STORAGE_KEY = "album-user-identity";
+const GUEST_ID_STORAGE_KEY = "album-guest-id";
+
+interface IdentityPromptOptions {
+  force?: boolean;
+}
 
 interface IdentityContextValue {
   identity: UserIdentity | null;
   isLoading: boolean;
   setIdentity: (value: UserIdentity) => void;
   clearIdentity: () => Promise<void>;
+  requestIdentity: (options?: IdentityPromptOptions) => Promise<UserIdentity | null>;
+  openIdentityEditor: () => void;
 }
 
 const IdentityContext = createContext<IdentityContextValue | null>(null);
@@ -28,10 +36,11 @@ function isUserIdentity(value: unknown): value is UserIdentity {
     candidate.id.length > 0 &&
     typeof candidate.name === "string" &&
     candidate.name.length > 0 &&
-    typeof candidate.email === "string" &&
-    candidate.email.length > 0 &&
+    (candidate.email === null || typeof candidate.email === "string") &&
     typeof candidate.avatarColor === "string" &&
-    candidate.avatarColor.length > 0
+    candidate.avatarColor.length > 0 &&
+    (typeof candidate.isGuest === "boolean" || typeof candidate.isGuest === "undefined") &&
+    (candidate.guestId === null || typeof candidate.guestId === "string" || typeof candidate.guestId === "undefined")
   );
 }
 
@@ -50,16 +59,40 @@ function readStoredIdentity() {
   }
 }
 
+/** Reads persisted guest identifier from localStorage. */
+function readStoredGuestId() {
+  const value = window.localStorage.getItem(GUEST_ID_STORAGE_KEY)?.trim() ?? "";
+  return value.length > 0 ? value : null;
+}
+
+/** Persists or clears guest identifier based on identity mode. */
+function persistGuestId(value: string | null | undefined) {
+  if (!value) {
+    window.localStorage.removeItem(GUEST_ID_STORAGE_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(GUEST_ID_STORAGE_KEY, value);
+}
+
 /** Provides cookie-backed identity with localStorage as a fast client-side cache. */
 export default function IdentityProvider({ children }: { children: React.ReactNode }) {
   const [identity, setIdentityState] = useState<UserIdentity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [guestId, setGuestId] = useState<string | null>(null);
+  const [isIdentitySheetOpen, setIsIdentitySheetOpen] = useState(false);
+  const pendingResolverRef = useRef<((value: UserIdentity | null) => void) | null>(null);
+  const pendingPromiseRef = useRef<Promise<UserIdentity | null> | null>(null);
 
   useEffect(() => {
     const storedIdentity = readStoredIdentity();
+    const storedGuestId = readStoredGuestId();
+
     if (storedIdentity) {
       setIdentityState(storedIdentity);
     }
+
+    setGuestId(storedGuestId);
 
     setIsLoading(false);
 
@@ -86,11 +119,14 @@ export default function IdentityProvider({ children }: { children: React.ReactNo
         if (payload.user && isUserIdentity(payload.user)) {
           setIdentityState(payload.user);
           window.localStorage.setItem(IDENTITY_STORAGE_KEY, JSON.stringify(payload.user));
+          persistGuestId(payload.user.guestId ?? null);
+          setGuestId(payload.user.guestId ?? null);
           return;
         }
 
-        setIdentityState(null);
-        window.localStorage.removeItem(IDENTITY_STORAGE_KEY);
+        if (!storedIdentity) {
+          setIdentityState(null);
+        }
       } catch {
         // Preserve cached identity when session check fails due to network/transient issues.
       }
@@ -105,11 +141,15 @@ export default function IdentityProvider({ children }: { children: React.ReactNo
   function setIdentity(value: UserIdentity) {
     setIdentityState(value);
     window.localStorage.setItem(IDENTITY_STORAGE_KEY, JSON.stringify(value));
+    persistGuestId(value.guestId ?? null);
+    setGuestId(value.guestId ?? null);
   }
 
   async function clearIdentity() {
     setIdentityState(null);
     window.localStorage.removeItem(IDENTITY_STORAGE_KEY);
+    persistGuestId(null);
+    setGuestId(null);
 
     try {
       await fetch("/api/auth/logout", {
@@ -120,17 +160,68 @@ export default function IdentityProvider({ children }: { children: React.ReactNo
     }
   }
 
-  const contextValue = useMemo<IdentityContextValue>(
-    () => ({
-      identity,
-      isLoading,
-      setIdentity,
-      clearIdentity,
-    }),
-    [identity, isLoading],
-  );
+  function resolvePendingIdentity(value: UserIdentity | null) {
+    pendingResolverRef.current?.(value);
+    pendingResolverRef.current = null;
+    pendingPromiseRef.current = null;
+  }
 
-  return <IdentityContext.Provider value={contextValue}>{children}</IdentityContext.Provider>;
+  function requestIdentity(options: IdentityPromptOptions = {}) {
+    if (identity && !options.force) {
+      return Promise.resolve(identity);
+    }
+
+    setIsIdentitySheetOpen(true);
+
+    if (pendingPromiseRef.current) {
+      return pendingPromiseRef.current;
+    }
+
+    const promise = new Promise<UserIdentity | null>((resolve) => {
+      pendingResolverRef.current = resolve;
+    });
+
+    pendingPromiseRef.current = promise;
+    return promise;
+  }
+
+  function openIdentityEditor() {
+    void requestIdentity({ force: true });
+  }
+
+  function handleSheetResolved(nextIdentity: UserIdentity) {
+    setIdentity(nextIdentity);
+    setIsIdentitySheetOpen(false);
+    resolvePendingIdentity(nextIdentity);
+  }
+
+  function handleSheetClosed() {
+    setIsIdentitySheetOpen(false);
+    resolvePendingIdentity(null);
+  }
+
+  const contextValue: IdentityContextValue = {
+    identity,
+    isLoading,
+    setIdentity,
+    clearIdentity,
+    requestIdentity,
+    openIdentityEditor,
+  };
+
+  return (
+    <IdentityContext.Provider value={contextValue}>
+      {children}
+      <IdentitySheet
+        isOpen={isIdentitySheetOpen}
+        defaultName={identity?.name ?? ""}
+        defaultEmail={identity?.email ?? ""}
+        guestId={guestId}
+        onClose={handleSheetClosed}
+        onResolved={handleSheetResolved}
+      />
+    </IdentityContext.Provider>
+  );
 }
 
 /** Hook for reading and mutating persistent local user identity. */

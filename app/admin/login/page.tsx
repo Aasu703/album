@@ -14,7 +14,7 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     if (isAdminSessionActive()) {
-      router.replace("/admin/dashboard");
+      router.push("/admin/dashboard");
     }
   }, [router]);
 
@@ -49,7 +49,7 @@ export default function AdminLoginPage() {
       }
 
       persistAdminSession(trimmedPassword);
-      router.replace("/admin/dashboard");
+      router.push("/admin/dashboard");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Login failed.");
     } finally {

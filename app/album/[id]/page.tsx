@@ -1,8 +1,11 @@
+import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 
 import PhotoGrid from "@/components/PhotoGrid";
 
+import { isAllowedRemoteImageUrl } from "@/app/lib/image";
 import { getSupabaseAdmin } from "@/app/lib/supabase-admin";
 import { supabase } from "@/app/lib/supabase";
 import type { Album, Photo } from "@/app/lib/types";
@@ -67,29 +70,63 @@ export default async function AlbumDetailPage({ params, searchParams }: AlbumDet
 		: { data: null };
 	const creatorRecord = creator as { name?: string } | null;
 	const creatorName = typeof creatorRecord?.name === "string" ? creatorRecord.name : "Unknown";
+	const coverUrl = isAllowedRemoteImageUrl(typedAlbum.cover_url) ? typedAlbum.cover_url : null;
+	const validPhotos = typedPhotosWithAvatar.filter((photo) => Boolean(photo.url));
 
 	return (
 		<main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-			<section className="space-y-1">
-				<h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{typedAlbum.name}</h1>
-				<p className="text-sm text-gray-600 dark:text-gray-300">
-					Created by {creatorName}
-				</p>
-				<p className="text-sm text-gray-600 dark:text-gray-300">
-					Showing {typedPhotos.length} {typedPhotos.length === 1 ? "photo" : "photos"}
-				</p>
-				<p className="text-xs text-gray-500 dark:text-gray-400">
-					To avoid browser slowdowns, this page renders up to {safeLimit} photos at once.
-				</p>
+			<section className="relative overflow-hidden rounded-3xl border border-[#E9ECEF] bg-white p-5 shadow-sm sm:p-7">
+				{coverUrl ? (
+					<div className="absolute inset-0">
+						<Image
+							src={coverUrl}
+							alt={`${typedAlbum.name} cover`}
+							fill
+							sizes="100vw"
+							className="object-cover blur-2xl opacity-35"
+						/>
+					</div>
+				) : null}
+
+				<div className="relative space-y-3">
+					<h1 className="text-3xl font-bold tracking-tight text-[#1A1A2E] sm:text-4xl">{typedAlbum.name}</h1>
+					<p className="text-sm text-[#6C757D]">Created by {creatorName}</p>
+					<p className="text-sm text-[#6C757D]">
+						{validPhotos.length} {validPhotos.length === 1 ? "photo" : "photos"} · Created {new Date(typedAlbum.created_at).toLocaleDateString()}
+					</p>
+
+					<div className="flex flex-wrap items-center gap-2">
+						<Link
+							href={`/upload?album_id=${typedAlbum.id}`}
+							className="inline-flex min-h-11 items-center rounded-full bg-[#4D96FF] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:shadow-md hover:brightness-95 active:scale-95"
+						>
+							Upload to Album
+						</Link>
+						<a
+							href="#album-photos"
+							className="inline-flex min-h-11 items-center rounded-full border border-[#E9ECEF] bg-white px-5 py-2 text-sm font-semibold text-[#1A1A2E] shadow-sm transition hover:shadow-md"
+						>
+							Download All
+						</a>
+						<Link
+							href={`/album/${typedAlbum.id}`}
+							className="inline-flex min-h-11 items-center rounded-full border border-[#E9ECEF] bg-white px-5 py-2 text-sm font-semibold text-[#1A1A2E] shadow-sm transition hover:shadow-md"
+						>
+							Share
+						</Link>
+					</div>
+				</div>
 			</section>
 
 			{photosError || uploaderRowsResult.error ? (
-				<p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
+				<p className="rounded-xl border border-[#FF6B6B]/35 bg-[#FF6B6B]/10 p-3 text-sm text-[#a93b3b]">
 					Failed to load photos: {photosError?.message ?? uploaderRowsResult.error?.message}
 				</p>
 			) : null}
 
-			<PhotoGrid photos={typedPhotosWithAvatar} albumId={typedAlbum.id} albumName={typedAlbum.name} />
+			<section id="album-photos">
+				<PhotoGrid photos={validPhotos} albumId={typedAlbum.id} albumName={typedAlbum.name} />
+			</section>
 		</main>
 	);
 }

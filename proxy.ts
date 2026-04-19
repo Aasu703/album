@@ -6,6 +6,7 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
 const MAX_TRACKED_BUCKETS = 5_000;
 const SESSION_COOKIE_NAME = "photo_album_session";
+const PUBLIC_IDENTITY_REDIRECT_TARGET = "/album";
 
 const buckets = new Map<string, { count: number; resetAt: number }>();
 
@@ -102,12 +103,16 @@ export function proxy(request: NextRequest) {
   const response = NextResponse.next();
   applySecurityHeaders(response);
 
+  // Admin routes are explicitly excluded from user-session enforcement.
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    return response;
+  }
+
   if (requiresUserSession(pathname)) {
     const hasSessionCookie = Boolean(request.cookies.get(SESSION_COOKIE_NAME)?.value);
 
     if (!hasSessionCookie) {
-      const redirectUrl = new URL("/", request.url);
-      redirectUrl.searchParams.set("onboard", "true");
+      const redirectUrl = new URL(PUBLIC_IDENTITY_REDIRECT_TARGET, request.url);
 
       const redirectResponse = NextResponse.redirect(redirectUrl);
       applySecurityHeaders(redirectResponse);

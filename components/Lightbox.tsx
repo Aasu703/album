@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 
+import { toDisplayImageUrl } from "@/app/lib/image";
 import type { Photo } from "@/app/lib/types";
 import Avatar from "@/components/Avatar";
 import ReactionBar from "@/components/ReactionBar";
@@ -18,6 +19,7 @@ interface LightboxProps {
 export default function Lightbox({ photos, activeIndex, onClose, onChange }: LightboxProps) {
   const touchStartXRef = useRef<number | null>(null);
   const photo = photos[activeIndex];
+  const displayUrl = toDisplayImageUrl(photo?.url) ?? photo?.url ?? "";
 
   const hasPrev = activeIndex > 0;
   const hasNext = activeIndex < photos.length - 1;
@@ -143,7 +145,7 @@ export default function Lightbox({ photos, activeIndex, onClose, onChange }: Lig
 
         <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-black/60">
           <Image
-            src={photo.url}
+            src={displayUrl}
             alt={photo.title ?? "Expanded photo"}
             width={1400}
             height={1000}

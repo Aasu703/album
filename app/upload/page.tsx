@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 
 import EmptyState from "@/components/EmptyState";
-import ImageUploader from "./_components/ImageUploader";
+import ImageUploader from "@/app/upload/_components/ImageUploader";
 import { supabase } from "@/app/lib/supabase";
 
 interface UploadPageProps {
@@ -26,7 +26,7 @@ export default async function UploadPage({ searchParams }: UploadPageProps) {
         <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
             <section className="mx-auto w-full max-w-3xl space-y-1 text-center">
                 <h1 className="text-3xl font-bold tracking-tight text-[#1A1A2E]">Drop your next favorite shot</h1>
-                <p className="text-sm text-[#6C757D]">Drag photos here or tap to select. Uploads go live instantly.</p>
+                <p className="text-sm text-[#6C757D]">Drag multiple photos here or tap to select. Queue uploads go live instantly.</p>
             </section>
 
             {error ? (

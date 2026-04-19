@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import type { Photo } from "@/app/lib/types";
 import Avatar from "@/components/Avatar";
@@ -22,13 +22,7 @@ export default function Lightbox({ photos, activeIndex, onClose, onChange }: Lig
   const hasPrev = activeIndex > 0;
   const hasNext = activeIndex < photos.length - 1;
 
-  const createdAtLabel = useMemo(() => {
-    if (!photo?.created_at) {
-      return "";
-    }
-
-    return new Date(photo.created_at).toLocaleString();
-  }, [photo?.created_at]);
+  const createdAtLabel = photo?.created_at ? new Date(photo.created_at).toLocaleString() : "";
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {

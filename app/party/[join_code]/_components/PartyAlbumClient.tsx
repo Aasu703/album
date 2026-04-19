@@ -6,6 +6,7 @@ import PhotoGrid from "@/components/PhotoGrid";
 import PartyUploader from "@/components/PartyUploader";
 import type { ApiResponse, PartyWithJoinUrl, Photo } from "@/app/lib/types";
 import Avatar from "@/components/Avatar";
+import FloatingUploadButton from "@/components/FloatingUploadButton";
 import LiveBadge from "@/components/LiveBadge";
 
 interface PartyAlbumClientProps {
@@ -22,6 +23,7 @@ export default function PartyAlbumClient({ joinCode }: PartyAlbumClientProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const latestCreatedAtRef = useRef<string | null>(null);
+  const uploaderAnchorRef = useRef<HTMLDivElement | null>(null);
 
   const loadData = useCallback(async (silent = false) => {
     if (silent) {
@@ -40,6 +42,11 @@ export default function PartyAlbumClient({ joinCode }: PartyAlbumClientProps) {
 
       const partyPayload = (await partyResponse.json()) as ApiResponse<PartyWithJoinUrl>;
       const photosPayload = (await photosResponse.json()) as ApiResponse<Photo[]>;
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[PartyAlbumClient] /api/parties response", partyPayload);
+        console.log("[PartyAlbumClient] /api/parties/photos response", photosPayload);
+      }
 
       if (!partyResponse.ok || partyPayload.error || !partyPayload.data) {
         throw new Error(partyPayload.error ?? "Unable to load party details.");
@@ -116,6 +123,10 @@ export default function PartyAlbumClient({ joinCode }: PartyAlbumClientProps) {
 
       const payload = (await response.json()) as ApiResponse<Photo[]>;
 
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[PartyAlbumClient] poll /api/parties/photos response", payload);
+      }
+
       if (!response.ok || payload.error || !payload.data) {
         throw new Error(payload.error ?? "Unable to refresh party photos.");
       }
@@ -189,50 +200,60 @@ export default function PartyAlbumClient({ joinCode }: PartyAlbumClientProps) {
     );
   }
 
+  function scrollToUploader() {
+    uploaderAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
     <section className="space-y-4">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{party.name}</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-300">Hosted by {party.host_name}</p>
-        {party.description ? <p className="text-sm text-gray-700 dark:text-gray-200">{party.description}</p> : null}
-        <p className="text-xs text-gray-500 dark:text-gray-400">Join code: {party.join_code}</p>
+      <header className="rounded-3xl border border-[#E9ECEF] bg-linear-to-br from-[#f4f8ff] via-white to-[#eafcee] p-5 shadow-sm sm:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-[#1A1A2E] sm:text-4xl">{party.name}</h1>
+            <p className="text-sm text-[#6C757D]">Hosted by {party.host_name}</p>
+            {party.description ? <p className="text-sm text-[#1A1A2E]">{party.description}</p> : null}
+            <p className="text-xs font-semibold text-[#6C757D]">Join code: {party.join_code}</p>
+          </div>
 
-        {party.members && party.members.length > 0 ? (
-          <div className="mt-2 space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Party Members</p>
-            <div className="flex flex-wrap gap-2">
-              {party.members.map((member) => (
-                <div
-                  key={`${member.user_id}-${member.user_name}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2.5 py-1 dark:border-gray-700 dark:bg-gray-900"
-                >
+          <LiveBadge />
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <p className="text-sm font-semibold text-[#1A1A2E]">
+            {party.members?.length ?? 0} {(party.members?.length ?? 0) === 1 ? "person" : "people"} joined
+          </p>
+
+          {party.members && party.members.length > 0 ? (
+            <div className="flex items-center">
+              {party.members.slice(0, 6).map((member, index) => (
+                <div key={`${member.user_id}-${member.user_name}`} className={index === 0 ? "" : "-ml-3"}>
                   <Avatar name={member.user_name} color={member.avatar_color} size="sm" />
-                  <span className="max-w-28 truncate text-xs text-gray-700 dark:text-gray-200">{member.user_name}</span>
                 </div>
               ))}
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </header>
 
       {liveNotice ? (
-        <p className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-200">
+        <p className="rounded-2xl border border-[#4D96FF]/35 bg-[#4D96FF]/10 p-3 text-sm text-[#2f6fcc]">
           {liveNotice}
         </p>
       ) : null}
 
-      <PartyUploader joinCode={joinCode} onUploaded={() => void loadData(true)} />
+      <div ref={uploaderAnchorRef}>
+        <PartyUploader joinCode={joinCode} onUploaded={() => void loadData(true)} />
+      </div>
 
-      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+      <div className="flex flex-wrap items-center gap-3 text-sm text-[#6C757D]">
         <span>
           {photos.length} {photos.length === 1 ? "photo" : "photos"}
         </span>
-        <LiveBadge />
         {refreshing ? <span>Refreshing...</span> : null}
         <button
           type="button"
           onClick={() => void loadData(true)}
-          className="min-h-10 rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-900 transition hover:bg-gray-300"
+          className="min-h-10 rounded-full border border-[#E9ECEF] bg-white px-4 py-2 text-xs font-semibold text-[#1A1A2E] shadow-sm transition hover:shadow-md"
         >
           Refresh
         </button>
@@ -244,6 +265,8 @@ export default function PartyAlbumClient({ joinCode }: PartyAlbumClientProps) {
         albumName={party.name}
         newPhotoIds={newPhotoIds}
       />
+
+      <FloatingUploadButton onClick={scrollToUploader} label="Upload" />
     </section>
   );
 }

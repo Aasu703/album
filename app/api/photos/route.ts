@@ -67,7 +67,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const photos = (data ?? []) as Photo[];
+    const photos = ((data ?? []) as Photo[]).filter((photo) => typeof photo.url === "string" && photo.url.trim().length > 0);
     const uploaderIds = Array.from(
       new Set(photos.map((photo) => photo.uploaded_by).filter((value): value is string => Boolean(value))),
     );

@@ -127,7 +127,7 @@ export default function AdminUsersPage() {
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} className="border-t border-gray-200 dark:border-gray-700">
+                <tr key={user.id} className="group border-t border-gray-200 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/60">
                   <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
                     <div className="flex items-center gap-2">
                       <Avatar name={user.name} color={generateAvatarColor(user.email)} size="sm" />
@@ -142,7 +142,7 @@ export default function AdminUsersPage() {
                     <button
                       type="button"
                       onClick={() => setPendingDelete(user)}
-                      className="min-h-11 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-red-700"
+                      className="min-h-11 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white opacity-0 transition hover:bg-red-700 group-hover:opacity-100"
                     >
                       Delete user
                     </button>

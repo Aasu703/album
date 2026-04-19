@@ -7,8 +7,10 @@ import { getIronSession, type IronSession, type SessionOptions } from "iron-sess
 export interface SessionData {
   userId: string;
   userName: string;
-  userEmail: string;
+  userEmail?: string | null;
   avatarColor: string;
+  isGuest?: boolean;
+  guestId?: string | null;
 }
 
 const SESSION_COOKIE_NAME = "photo_album_session";
@@ -85,14 +87,16 @@ export async function getSessionUser(request?: Request): Promise<SessionData | n
 
   void request;
 
-  if (!session.userId || !session.userEmail || !session.userName || !session.avatarColor) {
+  if (!session.userId || !session.userName || !session.avatarColor) {
     return null;
   }
 
   return {
     userId: session.userId,
     userName: session.userName,
-    userEmail: session.userEmail,
+    userEmail: session.userEmail ?? null,
     avatarColor: session.avatarColor,
+    isGuest: session.isGuest ?? false,
+    guestId: session.guestId ?? null,
   };
 }

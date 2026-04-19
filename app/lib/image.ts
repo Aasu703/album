@@ -11,3 +11,30 @@ export function isAllowedRemoteImageUrl(value: string | null | undefined): value
     return false;
   }
 }
+
+/**
+ * Returns a Cloudinary delivery URL with auto format/quality to avoid HEIC decode failures.
+ * Keeps the original URL when no transformation can be safely applied.
+ */
+export function toDisplayImageUrl(value: string | null | undefined): string | null {
+  if (!isAllowedRemoteImageUrl(value)) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(value);
+
+    if (!parsed.pathname.includes("/image/upload/")) {
+      return parsed.toString();
+    }
+
+    if (parsed.pathname.includes("/image/upload/f_auto,q_auto/")) {
+      return parsed.toString();
+    }
+
+    parsed.pathname = parsed.pathname.replace("/image/upload/", "/image/upload/f_auto,q_auto/");
+    return parsed.toString();
+  } catch {
+    return value;
+  }
+}

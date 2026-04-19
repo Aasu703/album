@@ -209,7 +209,7 @@ export default function AdminPartiesPage() {
                 const isDeactivating = deactivatingId === party.id;
 
                 return (
-                  <tr key={party.id} className="border-t border-gray-200 dark:border-gray-700">
+                  <tr key={party.id} className="group border-t border-gray-200 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/60">
                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{party.name}</td>
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{party.host_name}</td>
                     <td className="px-4 py-3">
@@ -257,7 +257,7 @@ export default function AdminPartiesPage() {
                         <button
                           type="button"
                           onClick={() => setPendingDelete(party)}
-                          className="min-h-11 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-red-700"
+                          className="min-h-11 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white opacity-0 transition hover:bg-red-700 group-hover:opacity-100"
                         >
                           Delete
                         </button>

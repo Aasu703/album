@@ -61,10 +61,10 @@ export default function AdminSidebar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className={`block rounded-xl px-3 py-2 text-sm font-medium transition ${
+                className={`block rounded-xl border-l-4 px-3 py-2 text-sm font-medium transition ${
                   isActive
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-100 hover:bg-gray-800"
+                    ? "border-[#4D96FF] bg-gray-800 text-white"
+                    : "border-transparent text-gray-100 hover:bg-gray-800"
                 }`}
               >
                 {link.label}

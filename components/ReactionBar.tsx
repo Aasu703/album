@@ -43,13 +43,12 @@ function buildTooltip(users: string[]) {
 
 /** Displays emoji reactions with optimistic toggle behavior for the active user session. */
 export default function ReactionBar({ photoId }: ReactionBarProps) {
-  const { identity } = useIdentity();
+  const { identity, requestIdentity } = useIdentity();
   const [summary, setSummary] = useState<ReactionSummary>(createEmptySummary());
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const canReact = Boolean(identity);
+  const [activeEmoji, setActiveEmoji] = useState<ReactionEmoji | null>(null);
 
   const loadSummary = useCallback(async () => {
     setLoading(true);
@@ -95,19 +94,28 @@ export default function ReactionBar({ photoId }: ReactionBarProps) {
   );
 
   async function toggleReaction(emoji: ReactionEmoji) {
-    if (!canReact || isSaving) {
+    if (isSaving) {
       return;
     }
+
+    let actingIdentity = identity;
+    if (!actingIdentity) {
+      actingIdentity = await requestIdentity();
+    }
+
+    if (!actingIdentity) {
+      return;
+    }
+
+    setActiveEmoji(emoji);
 
     const previous = summary;
     const current = previous[emoji];
     const isRemoving = current.reacted;
 
     const optimisticUsers = isRemoving
-      ? current.users.filter((name) => name !== identity?.name)
-      : identity
-        ? Array.from(new Set([...current.users, identity.name]))
-        : current.users;
+      ? current.users.filter((name) => name !== actingIdentity.name)
+      : Array.from(new Set([...current.users, actingIdentity.name]));
 
     const optimisticSummary: ReactionSummary = {
       ...previous,
@@ -145,6 +153,9 @@ export default function ReactionBar({ photoId }: ReactionBarProps) {
       setSummary(previous);
       setError(saveError instanceof Error ? saveError.message : "Failed to update reaction.");
     } finally {
+      window.setTimeout(() => {
+        setActiveEmoji(null);
+      }, 220);
       setIsSaving(false);
     }
   }
@@ -157,13 +168,13 @@ export default function ReactionBar({ photoId }: ReactionBarProps) {
             key={button.emoji}
             type="button"
             onClick={() => void toggleReaction(button.emoji)}
-            disabled={isSaving || loading || !canReact}
+            disabled={isSaving || loading}
             title={button.tooltip}
             className={`min-h-8 rounded-full border px-2.5 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
               button.reacted
                 ? "border-blue-400 bg-blue-100 text-blue-800 dark:border-blue-500 dark:bg-blue-900/50 dark:text-blue-200"
                 : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-            }`}
+            } ${activeEmoji === button.emoji ? "reaction-bounce" : ""}`}
           >
             <span>{button.emoji}</span>
             {button.count > 0 ? <span className="ml-1">{button.count}</span> : null}

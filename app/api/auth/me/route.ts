@@ -19,8 +19,10 @@ export async function GET(request: Request) {
         user: {
           id: user.userId,
           name: user.userName,
-          email: user.userEmail,
+          email: user.userEmail ?? null,
           avatarColor: user.avatarColor,
+          isGuest: user.isGuest ?? false,
+          guestId: user.guestId ?? null,
         },
       },
       { status: 200 },

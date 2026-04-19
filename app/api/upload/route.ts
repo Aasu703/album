@@ -310,7 +310,7 @@ export async function POST(request: Request) {
           uploaded_by_avatar_color: generateAvatarColor(
             typeof uploader.email === "string" && uploader.email.length > 0
               ? uploader.email
-              : sessionUser.userEmail,
+              : sessionUser.userEmail ?? `guest:${sessionUser.guestId ?? sessionUser.userId}`,
           ),
         } satisfies Photo,
         201,

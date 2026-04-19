@@ -21,8 +21,10 @@ export interface Photo {
 export interface UserIdentity {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   avatarColor: string;
+  isGuest?: boolean;
+  guestId?: string | null;
 }
 
 export interface PartyMember {

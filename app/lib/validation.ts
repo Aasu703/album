@@ -102,6 +102,17 @@ export function validateEmail(input: unknown): ValidationResult<string> {
   return { value, error: null };
 }
 
+/** Validates optional email input and normalizes empty values to null. */
+export function validateOptionalEmail(input: unknown): ValidationResult<string> {
+  const value = typeof input === "string" ? input.trim() : "";
+
+  if (!value) {
+    return { value: null, error: null };
+  }
+
+  return validateEmail(value);
+}
+
 /** Validates party names. */
 export function validatePartyName(input: unknown): ValidationResult<string> {
   const value = typeof input === "string" ? input.trim() : "";

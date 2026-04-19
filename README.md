@@ -41,8 +41,11 @@ Required:
 - CLOUDINARY_API_SECRET
 - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 - NEXT_PUBLIC_APP_URL
-- SESSION_SECRET
 - ADMIN_PASSWORD
+
+Recommended:
+
+- SESSION_SECRET (32+ characters for a dedicated session encryption key)
 
 Optional:
 
@@ -76,7 +79,8 @@ npm run build
 
 1. Add all required environment variables in project settings.
    - Include `ADMIN_PASSWORD` for `/admin` and `/api/admin/*` access.
-   - Include `SESSION_SECRET` for encrypted identity sessions.
+   - Add `SESSION_SECRET` (32+ characters) for a dedicated encrypted identity session key.
+   - If `SESSION_SECRET` is omitted, the app derives a stable fallback from `SUPABASE_SERVICE_ROLE_KEY`.
 2. Deploy with npm run build.
 3. Verify these flows in production:
    - identity onboarding

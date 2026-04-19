@@ -72,7 +72,7 @@ export async function GET(request: Request, context: PhotosContext) {
       return apiError(photosError.message, 500);
     }
 
-    const photoRows = (photos ?? []) as Photo[];
+    const photoRows = ((photos ?? []) as Photo[]).filter((photo) => typeof photo.url === "string" && photo.url.trim().length > 0);
     const uploaderIds = Array.from(
       new Set(photoRows.map((photo) => photo.uploaded_by).filter((value): value is string => Boolean(value))),
     );

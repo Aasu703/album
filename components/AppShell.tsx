@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 
 import ErrorBoundary from "@/components/ErrorBoundary";
-import IdentityGate from "@/components/IdentityGate";
 import IdentityProvider from "@/components/IdentityProvider";
 import Navbar from "@/components/Navbar";
 
@@ -25,7 +24,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <ErrorBoundary>
         <div className="flex min-h-full flex-col">
           <Navbar />
-          <IdentityGate>{children}</IdentityGate>
+          {children}
         </div>
       </ErrorBoundary>
     </IdentityProvider>

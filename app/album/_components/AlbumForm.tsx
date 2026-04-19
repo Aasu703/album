@@ -11,7 +11,7 @@ const MAX_ALBUM_NAME_LENGTH = 80;
 /** Submits a new album to the albums API and refreshes the listing page. */
 export default function AlbumForm() {
   const router = useRouter();
-  const { identity } = useIdentity();
+  const { identity, requestIdentity } = useIdentity();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,8 +22,9 @@ export default function AlbumForm() {
     setLoading(true);
     setError(null);
 
-    if (!identity) {
-      setError("Please set your identity first.");
+    const resolvedIdentity = identity ?? (await requestIdentity());
+    if (!resolvedIdentity) {
+      setError("Identity is required to create an album.");
       setLoading(false);
       return;
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import confetti from "canvas-confetti";
 
@@ -14,6 +15,7 @@ interface AlbumOption {
 
 interface ImageUploaderProps {
   albums: AlbumOption[];
+  initialAlbumId?: string;
 }
 
 const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
@@ -73,9 +75,9 @@ function validateImageFile(candidate: File | null): string | null {
 }
 
 /** Lets a user choose an image and upload it to the server upload API route. */
-export default function ImageUploader({ albums }: ImageUploaderProps) {
-  const { identity } = useIdentity();
-  const [albumId, setAlbumId] = useState(albums[0]?.id ?? "");
+export default function ImageUploader({ albums, initialAlbumId }: ImageUploaderProps) {
+  const { identity, requestIdentity } = useIdentity();
+  const [albumId, setAlbumId] = useState(initialAlbumId && albums.some((album) => album.id === initialAlbumId) ? initialAlbumId : albums[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -90,6 +92,17 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
     () => albums.find((album) => album.id === albumId)?.name ?? "",
     [albums, albumId],
   );
+
+  useEffect(() => {
+    if (initialAlbumId && albums.some((album) => album.id === initialAlbumId)) {
+      setAlbumId(initialAlbumId);
+      return;
+    }
+
+    if (!albums.some((album) => album.id === albumId)) {
+      setAlbumId(albums[0]?.id ?? "");
+    }
+  }, [albums, albumId, initialAlbumId]);
 
   useEffect(() => {
     if (!file) {
@@ -194,8 +207,9 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
       return;
     }
 
-    if (!identity) {
-      setError("Please set your identity first.");
+    const resolvedIdentity = identity ?? (await requestIdentity());
+    if (!resolvedIdentity) {
+      setError("Identity is required to upload photos.");
       setLoading(false);
       return;
     }
@@ -266,17 +280,17 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900"
+      className="w-full space-y-4 rounded-3xl border border-[#E9ECEF] bg-white p-5 shadow-sm"
     >
       <div className="space-y-1">
-        <label htmlFor="album-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="album-select" className="text-sm font-semibold text-[#1A1A2E]">
           Album
         </label>
         <select
           id="album-select"
           value={albumId}
           onChange={(event) => setAlbumId(event.target.value)}
-          className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+          className="min-h-12 w-full rounded-2xl border border-[#E9ECEF] bg-white px-4 py-2 text-sm text-[#1A1A2E] outline-none transition focus:border-[#4D96FF]"
         >
           {albums.map((album) => (
             <option key={album.id} value={album.id}>
@@ -287,7 +301,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="photo-title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="photo-title" className="text-sm font-semibold text-[#1A1A2E]">
           Title (optional)
         </label>
         <input
@@ -296,10 +310,10 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           maxLength={MAX_PHOTO_TITLE_LENGTH}
-          className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500"
+          className="min-h-12 w-full rounded-2xl border border-[#E9ECEF] bg-white px-4 py-2 text-sm text-[#1A1A2E] outline-none placeholder:text-[#6C757D] transition focus:border-[#4D96FF]"
           placeholder="Sunset at the beach"
         />
-        <p className="text-xs text-gray-500 dark:text-gray-400">Maximum {MAX_PHOTO_TITLE_LENGTH} characters.</p>
+        <p className="text-xs text-[#6C757D]">Maximum {MAX_PHOTO_TITLE_LENGTH} characters.</p>
       </div>
 
       <div
@@ -308,21 +322,21 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
         onDragLeave={handleDragLeave}
         className={`rounded-xl border border-dashed p-5 text-center transition ${
           isDragging
-            ? "border-gray-500 bg-gray-100 dark:border-gray-500 dark:bg-gray-800"
-            : "border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-950"
+            ? "border-[#4D96FF] bg-[#eaf2ff]"
+            : "border-[#E9ECEF] bg-[#F8F9FA]"
         }`}
       >
-        <p className="text-sm text-gray-700 dark:text-gray-200">
-          {file ? `Selected: ${file.name}` : "Drag and drop an image here (desktop)"}
+        <p className="text-sm font-semibold text-[#1A1A2E]">
+          {file ? `Selected: ${file.name}` : "Drag photos here or tap to select"}
         </p>
-        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">or</p>
+        <p className="mt-2 text-xs text-[#6C757D]">or</p>
         <label
           htmlFor="photo-file"
-          className="mt-3 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          className="mt-3 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-[#4D96FF] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:shadow-md hover:brightness-95 active:scale-95"
         >
           Click or tap to select photo
         </label>
-        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Accepted: JPEG, PNG, WEBP, HEIC (max 10MB)</p>
+        <p className="mt-2 text-xs text-[#6C757D]">Accepted: JPEG, PNG, WEBP, HEIC (max 10MB)</p>
         <input
           id="photo-file"
           type="file"
@@ -332,7 +346,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
         />
 
         {previewUrl ? (
-          <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+          <div className="mt-4 overflow-hidden rounded-2xl border border-[#E9ECEF] bg-white">
             <Image
               src={previewUrl}
               alt="Selected photo preview"
@@ -345,36 +359,39 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
       </div>
 
       {loading ? (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-950">
-          <div className="mb-1 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700 dark:border-gray-700 dark:border-t-gray-200" />
+        <div className="rounded-2xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2">
+          <div className="mb-1 flex items-center gap-2 text-sm text-[#1A1A2E]">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#4D96FF]/40 border-t-[#4D96FF]" />
             Uploading...
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+          <div className="h-2 overflow-hidden rounded-full bg-[#E9ECEF]">
             <div
-              className="h-full rounded-full bg-gray-800 transition-all dark:bg-gray-200"
+              className="h-full rounded-full bg-[#4D96FF] transition-all"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uploadProgress}%</p>
+          <p className="mt-1 text-xs text-[#6C757D]">{uploadProgress}%</p>
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
+      {error ? <p className="text-sm text-[#FF6B6B]">{error}</p> : null}
 
       {successBanner ? (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-200">
-          {successBanner}
+        <div className="rounded-2xl border border-[#6BCB77]/35 bg-[#6BCB77]/15 p-3 text-sm font-medium text-[#2f7a3a]">
+          <p>{successBanner}</p>
+          <Link href={`/album/${albumId}`} className="mt-1 inline-block font-semibold underline underline-offset-2">
+            Photo uploaded! View in album →
+          </Link>
         </div>
       ) : null}
 
       {uploadedUrl ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950/50">
-          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Latest upload</p>
-          <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
+        <div className="rounded-2xl border border-[#6BCB77]/35 bg-[#6BCB77]/15 p-3">
+          <p className="text-sm font-medium text-[#2f7a3a]">Latest upload</p>
+          <p className="mt-1 text-xs text-[#2f7a3a]">
             Album: {selectedAlbumName || "Selected album"}
           </p>
-          <div className="mt-3 overflow-hidden rounded-lg border border-emerald-200 bg-white dark:border-emerald-900 dark:bg-gray-900">
+          <div className="mt-3 overflow-hidden rounded-2xl border border-[#6BCB77]/35 bg-white">
             <Image
               src={uploadedUrl}
               alt="Uploaded photo thumbnail"
@@ -389,7 +406,7 @@ export default function ImageUploader({ albums }: ImageUploaderProps) {
       <button
         type="submit"
         disabled={loading || albums.length === 0}
-        className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="min-h-12 w-full rounded-full bg-[#4D96FF] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:shadow-md hover:brightness-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Uploading photo..." : "Upload photo"}
       </button>

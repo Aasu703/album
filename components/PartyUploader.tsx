@@ -27,7 +27,7 @@ interface UploadResponse extends ApiResponse<Photo> {
 
 /** Uploads party photos with progress and robust client-side validation. */
 export default function PartyUploader({ joinCode, onUploaded }: PartyUploaderProps) {
-  const { identity } = useIdentity();
+  const { identity, requestIdentity } = useIdentity();
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -58,8 +58,9 @@ export default function PartyUploader({ joinCode, onUploaded }: PartyUploaderPro
       return;
     }
 
-    if (!identity) {
-      setError("Please set your identity first.");
+    const resolvedIdentity = identity ?? (await requestIdentity());
+    if (!resolvedIdentity) {
+      setError("Identity is required to upload photos.");
       return;
     }
 
@@ -141,12 +142,12 @@ export default function PartyUploader({ joinCode, onUploaded }: PartyUploaderPro
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900"
+      className="space-y-3 rounded-3xl border border-[#E9ECEF] bg-white p-4 shadow-sm"
     >
-      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Upload to this party</h2>
+      <h2 className="text-base font-semibold text-[#1A1A2E]">Upload to this party</h2>
 
       <div className="space-y-1">
-        <label htmlFor="party-photo-title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="party-photo-title" className="text-sm font-semibold text-[#1A1A2E]">
           Title (optional)
         </label>
         <input
@@ -155,13 +156,13 @@ export default function PartyUploader({ joinCode, onUploaded }: PartyUploaderPro
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           maxLength={120}
-          className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500"
+          className="min-h-12 w-full rounded-2xl border border-[#E9ECEF] bg-white px-4 py-2 text-sm text-[#1A1A2E] outline-none placeholder:text-[#6C757D] transition focus:border-[#4D96FF]"
           placeholder="Dance floor moment"
         />
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="party-photo-file" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="party-photo-file" className="text-sm font-semibold text-[#1A1A2E]">
           Photo
         </label>
         <input
@@ -169,33 +170,33 @@ export default function PartyUploader({ joinCode, onUploaded }: PartyUploaderPro
           type="file"
           accept="image/*,.heic,.heif"
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:file:bg-blue-600 dark:file:text-white"
+          className="min-h-12 w-full rounded-2xl border border-[#E9ECEF] bg-white px-4 py-2 text-sm text-[#1A1A2E] outline-none file:mr-3 file:rounded-full file:border-0 file:bg-[#4D96FF] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
         />
       </div>
 
       {loading ? (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-950">
-          <div className="mb-1 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700 dark:border-gray-700 dark:border-t-gray-200" />
+        <div className="rounded-2xl border border-[#E9ECEF] bg-[#F8F9FA] px-3 py-2">
+          <div className="mb-1 flex items-center gap-2 text-sm text-[#1A1A2E]">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#4D96FF]/40 border-t-[#4D96FF]" />
             Uploading...
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+          <div className="h-2 overflow-hidden rounded-full bg-[#E9ECEF]">
             <div
-              className="h-full rounded-full bg-gray-800 transition-all dark:bg-gray-200"
+              className="h-full rounded-full bg-[#4D96FF] transition-all"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{uploadProgress}%</p>
+          <p className="mt-1 text-xs text-[#6C757D]">{uploadProgress}%</p>
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
-      {success ? <p className="text-sm text-emerald-700">{success}</p> : null}
+      {error ? <p className="text-sm text-[#FF6B6B]">{error}</p> : null}
+      {success ? <p className="text-sm text-[#2f7a3a]">{success}</p> : null}
 
       <button
         type="submit"
         disabled={loading}
-        className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="min-h-12 rounded-full bg-[#4D96FF] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:shadow-md hover:brightness-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Uploading..." : "Upload photo"}
       </button>

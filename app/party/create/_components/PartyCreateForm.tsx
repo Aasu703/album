@@ -13,7 +13,7 @@ const MAX_PARTY_DESCRIPTION_LENGTH = 500;
 
 /** Creates a party, then renders shareable code, link, and QR artifact. */
 export default function PartyCreateForm() {
-  const { identity } = useIdentity();
+  const { identity, requestIdentity } = useIdentity();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [createdParty, setCreatedParty] = useState<PartyWithJoinUrl | null>(null);
@@ -57,8 +57,9 @@ export default function PartyCreateForm() {
       return;
     }
 
-    if (!identity) {
-      setError("Please set your identity first.");
+    const resolvedIdentity = identity ?? (await requestIdentity());
+    if (!resolvedIdentity) {
+      setError("Identity is required to create a party.");
       return;
     }
 
@@ -108,10 +109,10 @@ export default function PartyCreateForm() {
     <section className="space-y-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900"
+        className="w-full space-y-4 rounded-3xl border border-[#E9ECEF] bg-white p-5 shadow-sm"
       >
         <div className="space-y-1">
-          <label htmlFor="party-name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label htmlFor="party-name" className="text-sm font-semibold text-[#1A1A2E]">
             Party name
           </label>
           <input
@@ -122,13 +123,13 @@ export default function PartyCreateForm() {
             required
             minLength={2}
             maxLength={MAX_PARTY_NAME_LENGTH}
-            className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500"
+            className="min-h-12 w-full rounded-2xl border border-[#E9ECEF] bg-white px-4 py-2 text-sm text-[#1A1A2E] outline-none placeholder:text-[#6C757D] transition focus:border-[#4D96FF]"
             placeholder="Sangeet Night"
           />
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="party-description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label htmlFor="party-description" className="text-sm font-semibold text-[#1A1A2E]">
             Description (optional)
           </label>
           <textarea
@@ -137,32 +138,32 @@ export default function PartyCreateForm() {
             onChange={(event) => setDescription(event.target.value)}
             maxLength={MAX_PARTY_DESCRIPTION_LENGTH}
             rows={4}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500"
+            className="w-full rounded-2xl border border-[#E9ECEF] bg-white px-4 py-3 text-sm text-[#1A1A2E] outline-none placeholder:text-[#6C757D] transition focus:border-[#4D96FF]"
             placeholder="Share your best moments from tonight!"
           />
         </div>
 
-        {error ? <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
+        {error ? <p className="text-sm text-[#FF6B6B]">{error}</p> : null}
 
         <button
           type="submit"
           disabled={loading}
-          className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="min-h-12 rounded-full bg-[#4D96FF] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:shadow-md hover:brightness-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Creating party..." : "Create Party"}
         </button>
       </form>
 
       {createdParty ? (
-        <section className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900 dark:bg-emerald-950/40">
-          <h2 className="text-lg font-semibold text-emerald-800 dark:text-emerald-200">Party created successfully</h2>
-          <p className="text-sm text-emerald-700 dark:text-emerald-300">Join code: {createdParty.join_code}</p>
-          <p className="break-all text-sm text-emerald-700 dark:text-emerald-300">{createdParty.join_url}</p>
+        <section className="space-y-3 rounded-3xl border border-[#6BCB77]/35 bg-[#6BCB77]/15 p-5">
+          <h2 className="text-lg font-semibold text-[#2f7a3a]">Party created successfully</h2>
+          <p className="text-sm text-[#2f7a3a]">Join code: {createdParty.join_code}</p>
+          <p className="break-all text-sm text-[#2f7a3a]">{createdParty.join_url}</p>
 
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/party/${createdParty.join_code}`}
-              className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              className="min-h-11 rounded-full bg-[#4D96FF] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:shadow-md hover:brightness-95"
             >
               Open party album
             </Link>
@@ -170,14 +171,14 @@ export default function PartyCreateForm() {
               type="button"
               onClick={handleDownloadQrCode}
               disabled={!qrCodeDataUrl}
-              className="min-h-11 rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-300 disabled:opacity-60"
+              className="min-h-11 rounded-full border border-[#E9ECEF] bg-white px-4 py-2 text-sm font-semibold text-[#1A1A2E] shadow-sm transition hover:shadow-md disabled:opacity-60"
             >
               Download QR Code
             </button>
           </div>
 
           {qrCodeDataUrl ? (
-            <div className="w-fit rounded-xl border border-emerald-200 bg-white p-3 dark:border-emerald-900 dark:bg-gray-900">
+            <div className="w-fit rounded-2xl border border-[#6BCB77]/35 bg-white p-3">
               <Image
                 src={qrCodeDataUrl}
                 alt={`QR code for join code ${createdParty.join_code}`}
@@ -188,7 +189,7 @@ export default function PartyCreateForm() {
               />
             </div>
           ) : (
-            <p className="text-sm text-amber-700 dark:text-amber-300">Unable to render QR code. You can still share the link above.</p>
+            <p className="text-sm text-[#6C757D]">Unable to render QR code. You can still share the link above.</p>
           )}
         </section>
       ) : null}

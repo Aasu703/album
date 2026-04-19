@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       return apiError(photosError.message, 500);
     }
 
-    const photoRows = (photos ?? []) as Array<{
+    const photoRows = ((photos ?? []) as Array<{
       id: string;
       album_id: string;
       url: string;
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
       uploaded_by: string | null;
       uploaded_by_name: string | null;
       created_at: string;
-    }>;
+    }>).filter((photo) => typeof photo.url === "string" && photo.url.trim().length > 0);
 
     const albumIds = Array.from(new Set(photoRows.map((photo) => photo.album_id)));
 

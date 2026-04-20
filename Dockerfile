@@ -1,8 +1,11 @@
 FROM node:20-bookworm-slim AS base
+# this means that the image will be built using the node:20-bookworm-slim image as the base image. 
+# This image is a lightweight version of Node.js 20 running on Debian Bookworm.
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# This sets an environment variable to disable Next.js telemetry, which collects anonymous usage data to help improve the framework.
 WORKDIR /app
-
+# This sets the working directory inside the container to /app. All subsequent commands will be run from this directory.
 FROM base AS deps
 
 COPY package.json package-lock.json ./

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
 import { supabase } from "@/app/lib/supabase";
 import ArcCarousel from "@/components/ArcCarousel";
+import LandingScrollHandler from "@/components/LandingScrollHandler";
 
 export const metadata = {
   title: "Album — Your memories, beautifully shared",
@@ -175,6 +176,8 @@ export default async function Home() {
           }
         `}} />
       </div>
+
+      <LandingScrollHandler />
     </div>
   );
 }

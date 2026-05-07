@@ -52,6 +52,21 @@ export default function Navbar() {
   const displayEmail = identity?.email ?? null;
   const avatarColor = identity?.avatarColor ?? "#6C757D";
 
+  if (currentPath === "/") {
+    return (
+      <header className="absolute top-0 left-0 right-0 z-10 flex h-16 items-center justify-between px-6 bg-transparent">
+        <div className="flex items-center gap-2">
+          <span aria-hidden="true" className="text-xl">📷</span>
+          <span className="text-lg font-bold text-white tracking-tight">Album</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <Link href="/album" className="text-sm font-medium text-white hover:text-white/80 transition-colors">Join</Link>
+          <Link href="/album" className="text-sm font-medium text-white hover:text-white/80 transition-colors">Log in</Link>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header
       className={`sticky top-0 z-40 border-b border-[#E9ECEF] bg-white/95 backdrop-blur transition-shadow ${

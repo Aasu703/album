@@ -3,7 +3,7 @@ import { apiError, isTrustedOrigin } from "@/app/lib/security";
 import { getSession } from "@/lib/session";
 import { generateAvatarColor } from "@/lib/avatar";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:5050";
 
 export const runtime = "nodejs";
 

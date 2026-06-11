@@ -17,6 +17,11 @@ export default function Navbar() {
   const pathname = usePathname();
   const currentPath = pathname ?? "";
   const { identity, clearIdentity, requestIdentity, openIdentityEditor } = useIdentity();
+
+  const activeLinks = [...links];
+  if (identity) {
+    activeLinks.push({ href: `/album?user_id=${identity.id}`, label: "My Photos" });
+  }
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isIdentityMenuOpen, setIsIdentityMenuOpen] = useState(false);
@@ -84,7 +89,7 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">
-            {links.map((link) => {
+            {activeLinks.map((link) => {
               const isActive = currentPath.startsWith(link.href);
 
               return (
@@ -213,7 +218,7 @@ export default function Navbar() {
           </div>
 
           <div className="space-y-2">
-            {links.map((link) => {
+            {activeLinks.map((link) => {
               const isActive = currentPath.startsWith(link.href);
 
               return (

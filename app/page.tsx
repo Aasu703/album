@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getSessionUser } from "@/lib/session";
 import { supabase } from "@/app/lib/supabase";
 import ArcCarousel from "@/components/ArcCarousel";
@@ -116,8 +117,8 @@ export default async function Home() {
         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-          <a
-            href="/album"
+          <Link
+            href="/register"
             style={{
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.15)',
@@ -132,10 +133,10 @@ export default async function Home() {
             }}
           >
             Get started
-          </a>
+          </Link>
 
-          <a
-            href="/album"
+          <Link
+            href="/login"
             style={{
               background: '#FFFFFF',
               border: 'none',
@@ -150,7 +151,7 @@ export default async function Home() {
             }}
           >
             Log in
-          </a>
+          </Link>
         </div>
       </div>
 

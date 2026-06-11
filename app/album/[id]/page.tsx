@@ -125,7 +125,7 @@ export default async function AlbumDetailPage({ params, searchParams }: AlbumDet
 			) : null}
 
 			<section id="album-photos">
-				<PhotoGrid photos={validPhotos} albumId={typedAlbum.id} albumName={typedAlbum.name} />
+				<PhotoGrid initialPhotos={validPhotos} albumId={typedAlbum.id} albumName={typedAlbum.name} />
 			</section>
 		</main>
 	);

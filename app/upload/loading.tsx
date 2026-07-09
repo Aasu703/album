@@ -1,10 +1,11 @@
+import SkeletonCard from "@/components/SkeletonCard";
+
 /** Loading state for upload route. */
 export default function UploadLoading() {
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 items-center justify-center px-4 py-8 sm:px-6">
-      <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 text-sm text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
-        Loading upload workspace...
-      </div>
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 px-4 py-8 sm:px-6">
+      <SkeletonCard className="mx-auto h-12 w-80" />
+      <SkeletonCard className="h-130 w-full rounded-3xl" />
     </main>
   );
 }

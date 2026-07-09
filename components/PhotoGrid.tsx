@@ -1,35 +1,23 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import { isAllowedRemoteImageUrl } from "@/app/lib/image";
 import type { Photo } from "@/app/lib/types";
+import EmptyState from "@/components/EmptyState";
+import Lightbox from "@/components/Lightbox";
+import PhotoCard from "@/components/PhotoCard";
 
 interface PhotoGridProps {
   photos: Photo[];
   albumId: string;
   albumName: string;
+  newPhotoIds?: string[];
 }
 
 interface PhotoItem {
   photo: Photo;
   url: string;
-}
-
-interface ActivePhoto extends Photo {
-  url: string;
-}
-
-/** Renders a compact download icon for action buttons. */
-function DownloadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 4v10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="m8 10 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M4 18h16" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
 }
 
 /** Reads a filename from Content-Disposition if available. */
@@ -68,18 +56,18 @@ function startBlobDownload(blob: Blob, filename: string) {
 }
 
 /** Renders photo thumbnails, selection controls, and album download actions. */
-export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps) {
-  const [activePhoto, setActivePhoto] = useState<ActivePhoto | null>(null);
-  const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
+export default function PhotoGrid({ photos, albumId, albumName, newPhotoIds = [] }: PhotoGridProps) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [isDownloadingAlbumZip, setIsDownloadingAlbumZip] = useState(false);
-  const [isDownloadingSelected, setIsDownloadingSelected] = useState(false);
   const [downloadingPhotoId, setDownloadingPhotoId] = useState<string | null>(null);
+  const newPhotoIdSet = useMemo(() => new Set(newPhotoIds), [newPhotoIds]);
 
   const photoItems = useMemo(
     () =>
       photos
+        .filter((photo) => Boolean(photo.url))
         .map((photo) => ({
           photo,
           url: isAllowedRemoteImageUrl(photo.url) ? photo.url : null,
@@ -87,26 +75,6 @@ export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps
         .filter((item): item is PhotoItem => Boolean(item.url)),
     [photos],
   );
-
-  const visiblePhotoIds = useMemo(() => photoItems.map(({ photo }) => photo.id), [photoItems]);
-
-  const selectedCount = selectedPhotoIds.length;
-
-  function togglePhotoSelection(photoId: string) {
-    setSelectedPhotoIds((current) =>
-      current.includes(photoId)
-        ? current.filter((id) => id !== photoId)
-        : [...current, photoId],
-    );
-  }
-
-  function selectAllVisible() {
-    setSelectedPhotoIds(visiblePhotoIds);
-  }
-
-  function clearSelection() {
-    setSelectedPhotoIds([]);
-  }
 
   async function downloadSinglePhoto(photoItem: PhotoItem) {
     if (downloadingPhotoId) {
@@ -138,40 +106,6 @@ export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps
       setDownloadError(error instanceof Error ? error.message : "Photo download failed.");
     } finally {
       setDownloadingPhotoId(null);
-    }
-  }
-
-  async function downloadSelectedArchive() {
-    if (selectedPhotoIds.length === 0) {
-      setDownloadError("Select at least one photo to download selected images.");
-      return;
-    }
-
-    setDownloadError(null);
-    setDownloadStatus(null);
-    setIsDownloadingSelected(true);
-
-    try {
-      const response = await fetch(
-        `/api/albums/${albumId}/download?photo_ids=${encodeURIComponent(selectedPhotoIds.join(","))}`,
-      );
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(payload?.error ?? "Failed to create selected download archive.");
-      }
-
-      const blob = await response.blob();
-      const fallback = `${toSafeFilename(albumName, "album")}-selected.zip`;
-      const filename = getDownloadFilename(response.headers.get("content-disposition"), fallback);
-
-      startBlobDownload(blob, filename);
-
-      const warning = response.headers.get("x-download-warning");
-      setDownloadStatus(warning ?? "Selected photos download started.");
-    } catch (error) {
-      setDownloadError(error instanceof Error ? error.message : "Download failed.");
-    } finally {
-      setIsDownloadingSelected(false);
     }
   }
 
@@ -219,49 +153,19 @@ export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps
 
   return (
     <>
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
-          <p className="mr-auto text-sm text-gray-700 dark:text-gray-300">
-            {selectedCount > 0
-              ? `${selectedCount} selected of ${photoItems.length}`
-              : `${photoItems.length} photos`}
-          </p>
-          <button
-            type="button"
-            onClick={selectAllVisible}
-            className="min-h-10 rounded-full bg-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-900 transition hover:bg-gray-300"
-            disabled={photoItems.length === 0}
-            title={photoItems.length === 0 ? "No photos yet" : "Select all visible photos"}
-          >
-            Select all
-          </button>
-          <button
-            type="button"
-            onClick={clearSelection}
-            className="min-h-10 rounded-full bg-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-900 transition hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={selectedCount === 0}
-          >
-            Clear
-          </button>
-          <button
-            type="button"
-            onClick={() => void downloadSelectedArchive()}
-            disabled={selectedCount === 0 || isDownloadingSelected || isDownloadingAlbumZip || Boolean(downloadingPhotoId)}
-            className="min-h-10 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isDownloadingSelected ? "Preparing selected..." : "Download selected"}
-          </button>
+      <section className="space-y-3" data-album-id={albumId}>
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#E9ECEF] bg-white p-3 shadow-sm">
+          <p className="mr-auto text-sm font-semibold text-[#1A1A2E]">{photoItems.length} photos</p>
           <button
             type="button"
             onClick={() => void downloadAlbumArchive()}
             disabled={
               photoItems.length === 0 ||
               isDownloadingAlbumZip ||
-              isDownloadingSelected ||
               Boolean(downloadingPhotoId)
             }
             title={photoItems.length === 0 ? "No photos yet" : "Download all photos as ZIP"}
-            className="min-h-10 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-11 rounded-full bg-[#4D96FF] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:shadow-md hover:brightness-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDownloadingAlbumZip ? "Building ZIP..." : "Download All"}
           </button>
@@ -281,111 +185,39 @@ export default function PhotoGrid({ photos, albumId, albumName }: PhotoGridProps
       </section>
 
       {photoItems.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-          No photos yet.
-        </div>
+        <EmptyState
+          title="No photos yet"
+          description="No photos yet. Be the first to upload!"
+          emoji="📸"
+        />
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {photoItems.map((photoItem) => {
+        <div className="columns-2 gap-3 md:columns-3 xl:columns-4 [column-fill:balance]">
+          {photoItems.map((photoItem, index) => {
             const { photo, url } = photoItem;
-            const checked = selectedPhotoIds.includes(photo.id);
             const isPhotoDownloading = downloadingPhotoId === photo.id;
+            const isNewPhoto = newPhotoIdSet.has(photo.id);
 
             return (
-              <div
+              <PhotoCard
                 key={photo.id}
-                className="group relative aspect-square overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800"
-              >
-                <button
-                  type="button"
-                  onClick={() => setActivePhoto({ ...photo, url })}
-                  className="h-full w-full"
-                >
-                  <Image
-                    src={url}
-                    alt={photo.title ?? "Album photo"}
-                    width={300}
-                    height={300}
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    quality={75}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
-                  />
-                </button>
-                <label className="absolute left-2 top-2 inline-flex items-center gap-2 rounded-full bg-black/65 px-2 py-1 text-[11px] text-white">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => togglePhotoSelection(photo.id)}
-                    className="h-3.5 w-3.5 accent-blue-600"
-                  />
-                  Select
-                </label>
-                <button
-                  type="button"
-                  onClick={() => void downloadSinglePhoto(photoItem)}
-                  disabled={
-                    isPhotoDownloading ||
-                    isDownloadingSelected ||
-                    isDownloadingAlbumZip ||
-                    Boolean(downloadingPhotoId)
-                  }
-                  className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  title="Download photo"
-                  aria-label="Download photo"
-                >
-                  {isPhotoDownloading ? (
-                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                  ) : (
-                    <DownloadIcon />
-                  )}
-                </button>
-                {photo.uploaded_by_name ? (
-                  <p className="absolute bottom-2 left-2 rounded-full bg-black/65 px-2 py-1 text-[11px] text-white">
-                    By {photo.uploaded_by_name}
-                  </p>
-                ) : null}
-              </div>
+                photo={{ ...photo, url }}
+                isNew={isNewPhoto}
+                isDownloading={isPhotoDownloading}
+                onOpen={() => setActiveIndex(index)}
+                onDownload={() => void downloadSinglePhoto(photoItem)}
+              />
             );
           })}
         </div>
       )}
 
-      {activePhoto ? (
-        <div
-          role="presentation"
-          onClick={() => setActivePhoto(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-        >
-          <div className="w-full max-w-4xl" onClick={(event) => event.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between text-white">
-              <div>
-                <h3 className="text-sm font-medium">{activePhoto.title ?? "Photo"}</h3>
-                {activePhoto.uploaded_by_name ? (
-                  <p className="text-xs text-white/80">Uploaded by {activePhoto.uploaded_by_name}</p>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                onClick={() => setActivePhoto(null)}
-                className="rounded-full border border-white/40 px-3 py-1 text-xs text-white"
-              >
-                Close
-              </button>
-            </div>
-            <div className="overflow-hidden rounded-xl bg-gray-950">
-              <Image
-                src={activePhoto.url}
-                alt={activePhoto.title ?? "Expanded photo"}
-                width={1400}
-                height={900}
-                sizes="(max-width: 1280px) 100vw, 1280px"
-                quality={85}
-                className="h-auto w-full object-contain"
-              />
-            </div>
-          </div>
-        </div>
+      {activeIndex !== null ? (
+        <Lightbox
+          photos={photoItems.map((item) => ({ ...item.photo, url: item.url }))}
+          activeIndex={activeIndex}
+          onClose={() => setActiveIndex(null)}
+          onChange={setActiveIndex}
+        />
       ) : null}
     </>
   );

@@ -14,13 +14,23 @@ export interface Photo {
   title: string | null;
   uploaded_by: string | null;
   uploaded_by_name: string | null;
+  uploaded_by_avatar_color?: string | null;
   created_at: string;
 }
 
 export interface UserIdentity {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
+  avatarColor: string;
+  isGuest?: boolean;
+  guestId?: string | null;
+}
+
+export interface PartyMember {
+  user_id: string;
+  user_name: string;
+  avatar_color: string;
 }
 
 export interface Party {
@@ -38,7 +48,18 @@ export interface Party {
 
 export interface PartyWithJoinUrl extends Party {
   join_url: string;
+  members?: PartyMember[];
 }
+
+export type ReactionEmoji = "❤️" | "😂" | "🔥" | "😮" | "👏";
+
+export interface ReactionGroup {
+  count: number;
+  reacted: boolean;
+  users: string[];
+}
+
+export type ReactionSummary = Record<ReactionEmoji, ReactionGroup>;
 
 export interface ApiResponse<T> {
   data: T | null;

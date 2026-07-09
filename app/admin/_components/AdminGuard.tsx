@@ -1,9 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-
-import { isAdminSessionActive } from "@/app/lib/admin-client";
+import { useEffect, useState } from "react";
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -12,15 +10,27 @@ interface AdminGuardProps {
 /** Guards admin routes using localStorage-based admin session state. */
 export default function AdminGuard({ children }: AdminGuardProps) {
   const router = useRouter();
-  const isAuthed = isAdminSessionActive();
+  const [authState, setAuthState] = useState<"checking" | "authed" | "unauth">("checking");
 
   useEffect(() => {
-    if (!isAuthed) {
-      router.replace("/admin/login");
-    }
-  }, [isAuthed, router]);
+    const authFlag = window.localStorage.getItem("adminAuth");
+    const password = window.localStorage.getItem("adminPassword");
+    const authed = authFlag === "true" && Boolean(password);
 
-  if (!isAuthed) {
+    if (!authed) {
+      router.push("/admin/login");
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      setAuthState(authed ? "authed" : "unauth");
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [router]);
+
+  if (authState !== "authed") {
     return (
       <main className="mx-auto flex w-full max-w-7xl flex-1 items-center justify-center px-4 py-8">
         <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-4 text-sm text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">

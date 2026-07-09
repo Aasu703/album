@@ -11,8 +11,9 @@ import {
   isUuid,
   validateJoinCode,
   validateOptionalPhotoTitle,
-  validateUserName,
 } from "@/app/lib/validation";
+import { generateAvatarColor } from "@/lib/avatar";
+import { getSessionUser } from "@/lib/session";
 
 export const runtime = "nodejs";
 
@@ -169,18 +170,12 @@ export async function POST(request: Request) {
 
     const inputAlbumId = String(formData.get("album_id") ?? "").trim();
     const inputPartyCode = String(formData.get("party_join_code") ?? "").trim();
-    const inputUserId = String(formData.get("user_id") ?? "").trim();
-    const inputUserName = String(formData.get("user_name") ?? "").trim();
     const { value: title, error: titleError } = validateOptionalPhotoTitle(formData.get("title"));
     const file = formData.get("file");
 
-    if (!inputUserId || !isUuid(inputUserId)) {
-      return apiError("user_id must be a valid identifier.", 400);
-    }
-
-    const { value: validatedUserName, error: userNameError } = validateUserName(inputUserName);
-    if (userNameError || !validatedUserName) {
-      return apiError(userNameError ?? "user_name is required.", 400);
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser) {
+      return apiError("Unauthorized.", 401);
     }
 
     if (titleError) {
@@ -203,8 +198,8 @@ export async function POST(request: Request) {
 
     const { data: uploader, error: uploaderError } = await admin
       .from("users")
-      .select("id, name")
-      .eq("id", inputUserId)
+      .select("id, name, email")
+      .eq("id", sessionUser.userId)
       .maybeSingle();
 
     if (uploaderError) {
@@ -277,7 +272,7 @@ export async function POST(request: Request) {
           album_id: albumId,
           url: uploadedUrl,
           title,
-          uploaded_by: inputUserId,
+          uploaded_by: sessionUser.userId,
           uploaded_by_name: uploader.name,
         })
         .select("id, album_id, url, title, uploaded_by, uploaded_by_name, created_at")
@@ -309,7 +304,17 @@ export async function POST(request: Request) {
         warning = "Photo uploaded, but album cover status could not be refreshed.";
       }
 
-      const response = apiSuccess(data as Photo, 201, {
+      const response = apiSuccess(
+        {
+          ...(data as Photo),
+          uploaded_by_avatar_color: generateAvatarColor(
+            typeof uploader.email === "string" && uploader.email.length > 0
+              ? uploader.email
+              : sessionUser.userEmail ?? `guest:${sessionUser.guestId ?? sessionUser.userId}`,
+          ),
+        } satisfies Photo,
+        201,
+        {
         success: true,
         url: uploadedUrl,
         warning,

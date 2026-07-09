@@ -1,11 +1,7 @@
 import { apiError, apiSuccess, isTrustedOrigin } from "@/app/lib/security";
 import { getSupabaseAdmin } from "@/app/lib/supabase-admin";
-import { isUuid, validateJoinCode, validateUserName } from "@/app/lib/validation";
-
-interface JoinBody {
-  user_id?: string;
-  user_name?: string;
-}
+import { validateJoinCode } from "@/app/lib/validation";
+import { getSessionUser } from "@/lib/session";
 
 interface JoinContext {
   params: { join_code: string } | Promise<{ join_code: string }>;
@@ -27,22 +23,9 @@ export async function POST(request: Request, context: JoinContext) {
       return apiError(joinCodeError ?? "Invalid join code.", 400);
     }
 
-    let body: JoinBody;
-
-    try {
-      body = (await request.json()) as JoinBody;
-    } catch {
-      return apiError("Invalid JSON body.", 400);
-    }
-
-    const userId = body.user_id?.trim();
-    if (!userId || !isUuid(userId)) {
-      return apiError("user_id must be a valid identifier.", 400);
-    }
-
-    const { value: userName, error: userNameError } = validateUserName(body.user_name);
-    if (userNameError || !userName) {
-      return apiError(userNameError ?? "user_name is required.", 400);
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser) {
+      return apiError("Unauthorized.", 401);
     }
 
     const admin = getSupabaseAdmin();
@@ -50,7 +33,7 @@ export async function POST(request: Request, context: JoinContext) {
     const { data: user, error: userError } = await admin
       .from("users")
       .select("id, name")
-      .eq("id", userId)
+      .eq("id", sessionUser.userId)
       .maybeSingle();
 
     if (userError) {
@@ -90,6 +73,17 @@ export async function POST(request: Request, context: JoinContext) {
       return apiError("This party has expired.", 410);
     }
 
+    const { data: existingMembership, error: existingMembershipError } = await admin
+      .from("party_members")
+      .select("party_id")
+      .eq("party_id", partyRecord.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingMembershipError) {
+      return apiError(existingMembershipError.message, 500);
+    }
+
     const { error: joinError } = await admin.from("party_members").upsert(
       {
         party_id: partyRecord.id,
@@ -110,6 +104,7 @@ export async function POST(request: Request, context: JoinContext) {
         party_id: partyRecord.id,
         user_id: user.id,
         joined: true,
+        first_join: !existingMembership,
       },
       200,
     );

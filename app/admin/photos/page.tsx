@@ -65,6 +65,11 @@ export default function AdminPhotosPage() {
 
     try {
       const payload = await adminRequest<AdminPhotoRow[]>("/api/admin/photos");
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[AdminPhotosPage] /api/admin/photos response", payload);
+      }
+
       setPhotos(payload);
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Failed to load photos.";
@@ -110,7 +115,7 @@ export default function AdminPhotosPage() {
 
   const pagedPhotos = useMemo(() => {
     const start = (activePage - 1) * PAGE_SIZE;
-    return filteredPhotos.slice(start, start + PAGE_SIZE);
+    return filteredPhotos.slice(start, start + PAGE_SIZE).filter((photo) => Boolean(photo.url));
   }, [activePage, filteredPhotos]);
 
   useEffect(() => {
@@ -237,7 +242,7 @@ export default function AdminPhotosPage() {
               return (
                 <article
                   key={photo.id}
-                  className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
+                  className="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-900"
                 >
                   <div className="relative aspect-square w-full bg-gray-100 dark:bg-gray-800">
                     {imageUrl ? (
@@ -263,7 +268,7 @@ export default function AdminPhotosPage() {
                       <button
                         type="button"
                         onClick={() => setPendingDelete(photo)}
-                        className="min-h-11 flex-1 rounded-full bg-red-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-red-700"
+                        className="min-h-11 flex-1 rounded-full bg-red-600 px-3 py-2 text-xs font-semibold text-white opacity-0 transition hover:bg-red-700 group-hover:opacity-100"
                       >
                         Delete
                       </button>

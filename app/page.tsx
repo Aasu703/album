@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Redirects root route traffic to the albums listing page. */
+/** Redirects root route traffic to albums. */
 export default function Home() {
   redirect("/album");
 }

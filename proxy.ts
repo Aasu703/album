@@ -5,6 +5,8 @@ import type { NextRequest } from "next/server";
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
 const MAX_TRACKED_BUCKETS = 5_000;
+const SESSION_COOKIE_NAME = "photo_album_session";
+const PUBLIC_IDENTITY_REDIRECT_TARGET = "/album";
 
 const buckets = new Map<string, { count: number; resetAt: number }>();
 
@@ -91,11 +93,34 @@ function checkRateLimit(request: NextRequest) {
   };
 }
 
+/** Returns true when route should require a user session cookie. */
+function requiresUserSession(pathname: string) {
+  return pathname === "/upload" || pathname.startsWith("/upload/") || pathname === "/party/create";
+}
+
 export function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
   const response = NextResponse.next();
   applySecurityHeaders(response);
 
-  if (!request.nextUrl.pathname.startsWith("/api/")) {
+  // Admin routes are explicitly excluded from user-session enforcement.
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    return response;
+  }
+
+  if (requiresUserSession(pathname)) {
+    const hasSessionCookie = Boolean(request.cookies.get(SESSION_COOKIE_NAME)?.value);
+
+    if (!hasSessionCookie) {
+      const redirectUrl = new URL(PUBLIC_IDENTITY_REDIRECT_TARGET, request.url);
+
+      const redirectResponse = NextResponse.redirect(redirectUrl);
+      applySecurityHeaders(redirectResponse);
+      return redirectResponse;
+    }
+  }
+
+  if (!pathname.startsWith("/api/")) {
     return response;
   }
 

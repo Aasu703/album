@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import PhotoGrid from "@/components/PhotoGrid";
-import PartyUploader from "@/components/PartyUploader";
+import PartyUploader from "../../../../components/PartyUploader";
 import type { ApiResponse, PartyWithJoinUrl, Photo } from "@/app/lib/types";
 import Avatar from "@/components/Avatar";
 import FloatingUploadButton from "@/components/FloatingUploadButton";

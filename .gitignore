@@ -1,8 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Applies to both /frontend (Next.js) and /backend (NestJS) apps.
 
 # dependencies
-/node_modules
-/.pnp
+node_modules
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -11,14 +12,17 @@
 !.yarn/versions
 
 # testing
-/coverage
+coverage
 
 # next.js
-/.next/
-/out/
+.next/
+out/
+
+# nestjs
+dist/
 
 # production
-/build
+build
 
 # misc
 .DS_Store
@@ -40,6 +44,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-#env 
-.env

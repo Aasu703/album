@@ -9,7 +9,7 @@ import Lightbox from "@/components/Lightbox";
 import PhotoCard from "@/components/PhotoCard";
 
 interface PhotoGridProps {
-  photos: Photo[];
+  initialPhotos: Photo[];
   albumId: string;
   albumName: string;
   newPhotoIds?: string[];
@@ -55,14 +55,39 @@ function startBlobDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(objectUrl);
 }
 
-/** Renders photo thumbnails, selection controls, and album download actions. */
-export default function PhotoGrid({ photos, albumId, albumName, newPhotoIds = [] }: PhotoGridProps) {
+/** Renders photo thumbnails, selection controls, and album download actions with pagination. */
+export default function PhotoGrid({ initialPhotos, albumId, albumName, newPhotoIds = [] }: PhotoGridProps) {
+  const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
+  const [page, setPage] = useState(2);
+  const [hasMore, setHasMore] = useState(initialPhotos.length >= 20);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [isDownloadingAlbumZip, setIsDownloadingAlbumZip] = useState(false);
   const [downloadingPhotoId, setDownloadingPhotoId] = useState<string | null>(null);
   const newPhotoIdSet = useMemo(() => new Set(newPhotoIds), [newPhotoIds]);
+
+  async function loadMore() {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    try {
+      const response = await fetch(`/api/photos?album_id=${albumId}&page=${page}&limit=20`);
+      const payload = await response.json();
+      if (payload.data && payload.data.length > 0) {
+        setPhotos(prev => [...prev, ...payload.data]);
+        setPage(prev => prev + 1);
+        setHasMore(payload.data.length === 20);
+      } else {
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.error("Failed to load more photos", err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
 
   const photoItems = useMemo(
     () =>
@@ -191,23 +216,37 @@ export default function PhotoGrid({ photos, albumId, albumName, newPhotoIds = []
           emoji="📸"
         />
       ) : (
-        <div className="columns-2 gap-3 md:columns-3 xl:columns-4 [column-fill:balance]">
-          {photoItems.map((photoItem, index) => {
-            const { photo, url } = photoItem;
-            const isPhotoDownloading = downloadingPhotoId === photo.id;
-            const isNewPhoto = newPhotoIdSet.has(photo.id);
+        <div className="flex flex-col gap-8">
+            <div className="columns-2 gap-3 md:columns-3 xl:columns-4 [column-fill:balance]">
+            {photoItems.map((photoItem, index) => {
+                const { photo, url } = photoItem;
+                const isPhotoDownloading = downloadingPhotoId === photo.id;
+                const isNewPhoto = newPhotoIdSet.has(photo.id);
 
-            return (
-              <PhotoCard
-                key={photo.id}
-                photo={{ ...photo, url }}
-                isNew={isNewPhoto}
-                isDownloading={isPhotoDownloading}
-                onOpen={() => setActiveIndex(index)}
-                onDownload={() => void downloadSinglePhoto(photoItem)}
-              />
-            );
-          })}
+                return (
+                <PhotoCard
+                    key={photo.id}
+                    photo={{ ...photo, url }}
+                    isNew={isNewPhoto}
+                    isDownloading={isPhotoDownloading}
+                    onOpen={() => setActiveIndex(index)}
+                    onDownload={() => void downloadSinglePhoto(photoItem)}
+                />
+                );
+            })}
+            </div>
+
+            {hasMore && (
+                <div className="flex justify-center pb-8">
+                    <button
+                        onClick={loadMore}
+                        disabled={isLoadingMore}
+                        className="min-h-12 rounded-full border border-[#E9ECEF] bg-white px-8 text-sm font-semibold text-[#1A1A2E] shadow-sm transition hover:shadow-md active:scale-95 disabled:opacity-50"
+                    >
+                        {isLoadingMore ? "Loading..." : "Load More"}
+                    </button>
+                </div>
+            )}
         </div>
       )}
 

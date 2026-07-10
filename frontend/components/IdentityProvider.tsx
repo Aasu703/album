@@ -17,6 +17,8 @@ interface IdentityContextValue {
   isLoading: boolean;
   setIdentity: (value: UserIdentity) => void;
   clearIdentity: () => Promise<void>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  register: (data: any) => Promise<{ success: boolean; message?: string }>;
   requestIdentity: (options?: IdentityPromptOptions) => Promise<UserIdentity | null>;
   openIdentityEditor: () => void;
 }
@@ -148,8 +150,6 @@ export default function IdentityProvider({ children }: { children: React.ReactNo
   async function clearIdentity() {
     setIdentityState(null);
     window.localStorage.removeItem(IDENTITY_STORAGE_KEY);
-    persistGuestId(null);
-    setGuestId(null);
 
     try {
       await fetch("/api/auth/logout", {
@@ -158,6 +158,33 @@ export default function IdentityProvider({ children }: { children: React.ReactNo
     } catch {
       // Clearing local identity is still best-effort even if logout request fails.
     }
+  }
+
+  async function login(email: string, password: string) {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const payload = await response.json();
+    if (payload.success) {
+      setIdentity(payload.user);
+      return { success: true };
+    }
+    return { success: false, message: payload.message || "Login failed" };
+  }
+
+  async function register(data: any) {
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const payload = await response.json();
+    if (response.ok && payload.success) {
+      return { success: true };
+    }
+    return { success: false, message: payload.message || "Registration failed" };
   }
 
   function resolvePendingIdentity(value: UserIdentity | null) {
@@ -205,6 +232,8 @@ export default function IdentityProvider({ children }: { children: React.ReactNo
     isLoading,
     setIdentity,
     clearIdentity,
+    login,
+    register,
     requestIdentity,
     openIdentityEditor,
   };

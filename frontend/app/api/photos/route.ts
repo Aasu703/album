@@ -38,27 +38,33 @@ async function deleteCloudinaryAsset(photoUrl: string) {
   }
 }
 
-/** Fetches photos for a given album id from the query string. */
+/** Fetches photos with pagination. */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const albumId = searchParams.get("album_id")?.trim();
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "20");
+    const userId = searchParams.get("user_id")?.trim();
 
-    if (!albumId || !isUuid(albumId)) {
-      return NextResponse.json(
-        {
-          data: null,
-          error: "album_id query parameter is required and must be valid.",
-        } satisfies ApiResponse<null>,
-        { status: 400 },
-      );
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    let query = supabase
+      .from("photos")
+      .select("id, album_id, url, title, uploaded_by, uploaded_by_name, created_at", { count: "exact" });
+
+    if (albumId && isUuid(albumId)) {
+      query = query.eq("album_id", albumId);
     }
 
-    const { data, error } = await supabase
-      .from("photos")
-      .select("id, album_id, url, title, uploaded_by, uploaded_by_name, created_at")
-      .eq("album_id", albumId)
-      .order("created_at", { ascending: false });
+    if (userId) {
+      query = query.eq("uploaded_by", userId);
+    }
+
+    const { data, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
     if (error) {
       return NextResponse.json(
@@ -95,7 +101,16 @@ export async function GET(request: Request) {
         : null,
     }));
 
-    return NextResponse.json({ data: payload, error: null } satisfies ApiResponse<Photo[]>, { status: 200 });
+    return NextResponse.json({ 
+      data: payload, 
+      error: null,
+      meta: {
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil((count ?? 0) / limit)
+      }
+    }, { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch photos.";
     return apiError(message, 500);

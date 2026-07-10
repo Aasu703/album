@@ -194,21 +194,11 @@ export async function POST(request: Request) {
       return apiError("File too large. Maximum allowed size is 10MB.", 413);
     }
 
-    const admin = getSupabaseAdmin();
-
-    const { data: uploader, error: uploaderError } = await admin
-      .from("users")
-      .select("id, name, email")
-      .eq("id", sessionUser.userId)
-      .maybeSingle();
-
-    if (uploaderError) {
-      return apiError(uploaderError.message, 500);
-    }
-
-    if (!uploader) {
-      return apiError("Uploader identity not found.", 404);
-    }
+    const uploader = {
+      id: sessionUser.userId,
+      name: sessionUser.userName,
+      email: sessionUser.userEmail
+    };
 
     let albumId = inputAlbumId;
 

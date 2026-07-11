@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Param } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Roles } from '../../users/presentation/decorators/roles.decorator';
@@ -8,13 +8,29 @@ import { RolesGuard } from '../../users/presentation/guards/roles.guard';
 import { ArtworkSchemaClass } from '../infrastructure/artwork.schema';
 import { CreateArtworkDto } from './dto/create-artwork.dto';
 
+import { ArtworksService } from '../application/artworks.service';
+import { BidDto } from './dto/bid.dto';
+
 @Controller('artworks')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ArtworksController {
   constructor(
     @InjectModel(ArtworkSchemaClass.name)
     private readonly artworkModel: Model<ArtworkSchemaClass>,
+    private readonly artworksService: ArtworksService,
   ) {}
+
+  // Task 1: Bidding endpoint
+  @Post(':id/bid')
+  @Roles('USER')
+  async placeBid(
+    @Param('id') id: string,
+    @Body() dto: BidDto,
+    @CurrentUser() user: AuthenticatedRequest['user'],
+  ) {
+    const updatedArtwork = await this.artworksService.placeBid(id, user.sub, dto.amount);
+    return { success: true, data: { artwork: updatedArtwork } };
+  }
 
   // Task 4: Artwork Creation Endpoint
   // Security Check: Only a VERIFIED_ARTIST can list an artwork. The RolesGuard enforces this

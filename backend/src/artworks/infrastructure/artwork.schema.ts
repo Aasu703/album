@@ -25,6 +25,18 @@ export class ArtworkSchemaClass {
   @Prop({ type: Number })
   price?: number;
 
+  @Prop({ type: Number })
+  currentHighestBid?: number;
+
+  @Prop({ type: Types.ObjectId, ref: UserSchemaClass.name })
+  bidderId?: Types.ObjectId;
+
+  @Prop({ type: Date })
+  auctionEndTime?: Date;
+
+  @Prop({ enum: ['AVAILABLE', 'SOLD'], default: 'AVAILABLE' })
+  status: string;
+
   createdAt?: Date;
 }
 

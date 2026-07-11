@@ -6,6 +6,7 @@ import { USER_REPOSITORY } from './domain/user.repository';
 import { UserMongooseSchema, UserSchemaClass } from './infrastructure/user.schema';
 import { UserRepositoryImpl } from './infrastructure/user.repository.impl';
 import { AuthController } from './presentation/auth.controller';
+import { UsersController } from './presentation/users.controller';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 import { RolesGuard } from './presentation/guards/roles.guard';
 
@@ -14,7 +15,7 @@ import { RolesGuard } from './presentation/guards/roles.guard';
     MongooseModule.forFeature([{ name: UserSchemaClass.name, schema: UserMongooseSchema }]),
     JwtModule.register({}),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, UsersController],
   providers: [
     AuthService,
     JwtAuthGuard,

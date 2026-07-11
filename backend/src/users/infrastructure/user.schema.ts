@@ -21,7 +21,7 @@ export class UserSchemaClass {
   @Prop({ trim: true })
   phone?: string;
 
-  @Prop({ enum: ['buyer', 'seller', 'admin'], default: 'buyer' })
+  @Prop({ enum: ['USER', 'VERIFIED_ARTIST', 'ADMIN'], default: 'USER' })
   role: UserRole;
 
   @Prop({ enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' })
@@ -34,6 +34,18 @@ export class UserSchemaClass {
   stripeCustomerId?: string;
 
   createdAt?: Date;
+
+  @Prop({ default: 0 })
+  failedLoginAttempts: number;
+
+  @Prop()
+  lockoutUntil?: Date;
+
+  @Prop({ default: false })
+  isMfaEnabled: boolean;
+
+  @Prop()
+  mfaSecret?: string;
 }
 
 export const UserMongooseSchema = SchemaFactory.createForClass(UserSchemaClass);
@@ -45,6 +57,7 @@ UserMongooseSchema.set('toJSON', {
     delete ret._id;
     delete ret.__v;
     delete ret.passwordHash;
+    delete ret.mfaSecret;
     return ret;
   }) as (...args: unknown[]) => unknown,
 });

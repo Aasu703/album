@@ -4,7 +4,9 @@ import {
   Inject,
   Injectable,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
+import { authenticator } from 'otplib';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { JwtSignOptions } from '@nestjs/jwt';
@@ -95,13 +97,64 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
+    if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+      throw new ForbiddenException('Account locked due to too many failed attempts. Try again later.');
+    }
+
     const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatches) {
+      const failedAttempts = (user.failedLoginAttempts || 0) + 1;
+      let lockoutUntil = user.lockoutUntil;
+      if (failedAttempts >= 10) {
+        lockoutUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+      }
+      await this.userRepository.update(user.id, { failedLoginAttempts: failedAttempts, lockoutUntil });
       throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    if (user.failedLoginAttempts !== 0 || user.lockoutUntil) {
+      await this.userRepository.update(user.id, { failedLoginAttempts: 0, lockoutUntil: null });
+    }
+
+    if (user.isMfaEnabled) {
+      if (!dto.mfaToken) {
+        throw new UnauthorizedException('MFA token required.');
+      }
+      if (!user.mfaSecret) {
+        throw new UnauthorizedException('MFA is enabled but no secret is found.');
+      }
+      const isValid = authenticator.verify({ token: dto.mfaToken, secret: user.mfaSecret });
+      if (!isValid) {
+        throw new UnauthorizedException('Invalid MFA token.');
+      }
     }
 
     const tokens = this.signTokens(user);
     return { user: toPublicUser(user), ...tokens };
+  }
+
+  async generateMfaSecret(userId: string): Promise<{ secret: string; otpauthUrl: string }> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new UnauthorizedException('User not found.');
+
+    const secret = authenticator.generateSecret();
+    const otpauthUrl = authenticator.keyuri(user.email, 'FreeAlbumApp', secret);
+
+    await this.userRepository.update(user.id, { mfaSecret: secret });
+
+    return { secret, otpauthUrl };
+  }
+
+  async verifyAndEnableMfa(userId: string, token: string): Promise<boolean> {
+    const user = await this.userRepository.findById(userId);
+    if (!user || !user.mfaSecret) throw new BadRequestException('User or MFA secret not found.');
+
+    const isValid = authenticator.verify({ token, secret: user.mfaSecret });
+    if (isValid) {
+      await this.userRepository.update(user.id, { isMfaEnabled: true });
+      return true;
+    }
+    throw new BadRequestException('Invalid MFA token.');
   }
 
   async refresh(refreshToken: string): Promise<AuthTokens> {
@@ -120,6 +173,20 @@ export class AuthService {
     }
 
     return this.signTokens(user);
+  }
+
+  async verifyArtist(userId: string): Promise<PublicUser> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+    
+    // Upgrade role to VERIFIED_ARTIST
+    const updated = await this.userRepository.update(user.id, { role: 'VERIFIED_ARTIST' });
+    if (!updated) {
+      throw new BadRequestException('Failed to verify artist.');
+    }
+    return toPublicUser(updated);
   }
 
   async me(userId: string): Promise<PublicUser> {

@@ -1,4 +1,4 @@
-export type UserRole = 'buyer' | 'seller' | 'admin';
+export type UserRole = 'USER' | 'VERIFIED_ARTIST' | 'ADMIN';
 export type SellerStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
 export interface User {
@@ -13,9 +13,13 @@ export interface User {
   stripeConnectAccountId?: string | null;
   stripeCustomerId?: string | null;
   createdAt: Date;
+  failedLoginAttempts?: number;
+  lockoutUntil?: Date | null;
+  isMfaEnabled?: boolean;
+  mfaSecret?: string | null;
 }
 
 export type NewUser = Omit<
   User,
-  'id' | 'createdAt' | 'role' | 'sellerStatus' | 'stripeConnectAccountId' | 'stripeCustomerId'
+  'id' | 'createdAt' | 'role' | 'sellerStatus' | 'stripeConnectAccountId' | 'stripeCustomerId' | 'failedLoginAttempts' | 'lockoutUntil' | 'isMfaEnabled' | 'mfaSecret'
 >;

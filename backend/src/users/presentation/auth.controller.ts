@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, UseGuards, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthService } from '../application/auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
@@ -20,16 +21,48 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
-  async login(@Body() dto: LoginDto) {
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto);
-    return { success: true, data: result };
+    
+    // Set secure HTTP-only cookies to mitigate XSS
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: true, // Should ideally check if env is production
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Return only the user object in the JSON body
+    return { success: true, data: { user: result.user } };
   }
 
   @Post('refresh')
   @HttpCode(200)
-  async refresh(@Body() dto: RefreshDto) {
+  async refresh(@Body() dto: RefreshDto, @Res({ passthrough: true }) res: Response) {
     const tokens = await this.authService.refresh(dto.refreshToken);
-    return { success: true, data: tokens };
+    
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return { success: true };
   }
 
   @Get('me')

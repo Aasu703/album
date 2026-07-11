@@ -18,6 +18,10 @@ function toDomain(doc: UserDocument): User {
     stripeConnectAccountId: doc.stripeConnectAccountId ?? null,
     stripeCustomerId: doc.stripeCustomerId ?? null,
     createdAt: doc.createdAt ?? new Date(),
+    failedLoginAttempts: doc.failedLoginAttempts ?? 0,
+    lockoutUntil: doc.lockoutUntil ?? null,
+    isMfaEnabled: doc.isMfaEnabled ?? false,
+    mfaSecret: doc.mfaSecret ?? null,
   };
 }
 

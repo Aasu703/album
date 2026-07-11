@@ -6,10 +6,11 @@ export interface Artwork {
   title: string;
   description: string;
   imageUrl: string;
+  imagePublicId: string;
   painterId: string;
   listingType: ListingType;
   price?: number;
-  
+
   // Auction specific fields
   currentHighestBid?: number;
   bidderId?: string;

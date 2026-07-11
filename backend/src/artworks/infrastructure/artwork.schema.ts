@@ -16,6 +16,9 @@ export class ArtworkSchemaClass {
   @Prop({ required: true })
   imageUrl: string;
 
+  @Prop({ required: true })
+  imagePublicId: string;
+
   @Prop({ type: Types.ObjectId, ref: UserSchemaClass.name, required: true })
   painterId: Types.ObjectId;
 
@@ -46,9 +49,17 @@ ArtworkMongooseSchema.set('toJSON', {
   virtuals: true,
   transform: ((_doc: unknown, ret: Record<string, unknown>) => {
     ret.id = String(ret._id);
-    ret.painterId = String(ret.painterId);
+    // painterId/bidderId are plain ObjectIds when not populated, or already-transformed
+    // plain objects (via the User schema's own toJSON) when populated with .populate().
+    if (ret.painterId && typeof ret.painterId !== 'object') {
+      ret.painterId = String(ret.painterId);
+    }
+    if (ret.bidderId && typeof ret.bidderId !== 'object') {
+      ret.bidderId = String(ret.bidderId);
+    }
     delete ret._id;
     delete ret.__v;
+    delete ret.imagePublicId;
     return ret;
   }) as (...args: unknown[]) => unknown,
 });

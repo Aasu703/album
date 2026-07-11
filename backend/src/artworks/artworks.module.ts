@@ -6,11 +6,13 @@ import { ArtworkMongooseSchema, ArtworkSchemaClass } from './infrastructure/artw
 import { ArtworksService } from './application/artworks.service';
 
 import { UsersModule } from '../users/users.module';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: ArtworkSchemaClass.name, schema: ArtworkMongooseSchema }]),
     UsersModule,
+    CloudinaryModule,
   ],
   controllers: [ArtworksController],
   providers: [ArtworksService],

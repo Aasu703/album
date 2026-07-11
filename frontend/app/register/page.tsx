@@ -1,137 +1,186 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useAuth } from "@/components/AuthProvider";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { api } from '../../lib/api';
 
 export default function RegisterPage() {
-  const { register } = useAuth();
-  const [status, setStatus] = useState<"initial" | "loading">("initial");
-  const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    Firstname: "",
-    Lastname: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    phone: "",
-  });
   const router = useRouter();
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setStatus("loading");
-    setError(null);
-    const result = await register(formData);
-    if (result.success) {
-      router.push("/login");
-    } else {
-      setError(result.message || "Registration failed");
-      setStatus("initial");
-    }
-  }
+  
+  const [formData, setFormData] = useState({
+    Firstname: '',
+    Lastname: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  });
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0A0A0A] px-4 py-12">
-      <div className="w-full max-w-md space-y-8 rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-white">Create account</h1>
-          <p className="mt-2 text-white/50">Join us and start sharing memories</p>
-        </div>
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await api.post('/auth/register', formData);
+      // Automatically redirect to login page after successful registration
+      router.push('/login');
+    } catch (err: any) {
+      console.error(err);
+      if (!err.response) {
+        setError(`Network Error: ${err.message}. Please check CORS or backend connection.`);
+      } else {
+        const msg = err.response?.data?.message;
+        setError(Array.isArray(msg) ? msg.join(', ') : (msg || 'Registration failed.'));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100 p-4">
+      <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-xl shadow-2xl border border-gray-700">
+        <h1 className="text-3xl font-bold text-center text-white">Create Account</h1>
+        
+        {error && (
+          <div className="p-3 text-sm text-red-200 bg-red-900/50 border border-red-800 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleRegister} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-white/70">First Name</label>
+              <label className="block text-sm font-medium mb-1">First Name</label>
               <input
+                type="text"
                 name="Firstname"
-                required
                 value={formData.Firstname}
                 onChange={handleChange}
-                className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#4D96FF]"
+                className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                required
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-white/70">Last Name</label>
+              <label className="block text-sm font-medium mb-1">Last Name</label>
               <input
+                type="text"
                 name="Lastname"
-                required
                 value={formData.Lastname}
                 onChange={handleChange}
-                className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#4D96FF]"
+                className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                required
               />
             </div>
           </div>
-
+          
           <div>
-            <label className="text-sm font-medium text-white/70">Email</label>
+            <label className="block text-sm font-medium mb-1">Email</label>
             <input
-              name="email"
               type="email"
-              required
+              name="email"
               value={formData.email}
               onChange={handleChange}
-              className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#4D96FF]"
-              placeholder="you@example.com"
+              className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              required
             />
           </div>
 
           <div>
-            <label className="text-sm font-medium text-white/70">Phone (Optional)</label>
+            <label className="block text-sm font-medium mb-1">Phone Number <span className="text-gray-500 text-xs">(Optional)</span></label>
             <input
+              type="tel"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#4D96FF]"
+              className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-white/70">Password</label>
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
+            <div className="relative">
               <input
+                type={showPassword ? 'text' : 'password'}
                 name="password"
-                type="password"
-                required
                 value={formData.password}
                 onChange={handleChange}
-                className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#4D96FF]"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-white/70">Confirm</label>
-              <input
-                name="confirmPassword"
-                type="password"
+                className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none pr-12"
                 required
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#4D96FF]"
+                minLength={8}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+              >
+                {showPassword ? (
+                  <EyeSlashIcon className="w-5 h-5" />
+                ) : (
+                  <EyeIcon className="w-5 h-5" />
+                )}
+              </button>
             </div>
           </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          <div>
+            <label className="block text-sm font-medium mb-1">Confirm Password</label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none pr-12"
+                required
+                minLength={8}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+              >
+                {showConfirmPassword ? (
+                  <EyeSlashIcon className="w-5 h-5" />
+                ) : (
+                  <EyeIcon className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+          </div>
 
           <button
             type="submit"
-            disabled={status === "loading"}
-            className="w-full rounded-full bg-[#4D96FF] py-3 font-semibold text-white transition hover:bg-[#3d85ee] disabled:opacity-50"
+            disabled={loading}
+            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/50 text-white font-semibold rounded-lg shadow-md transition-all disabled:opacity-50 mt-2"
           >
-            {status === "loading" ? "Creating account..." : "Sign Up"}
+            {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-white/50">
-          Already have an account?{" "}
-          <Link href="/login" className="text-[#4D96FF] hover:underline">
-            Log in
-          </Link>
+        <p className="text-center text-sm text-gray-400 mt-4">
+          Already have an account?{' '}
+          <button type="button" onClick={() => router.push('/login')} className="text-indigo-400 hover:text-indigo-300 font-medium">
+            Sign In
+          </button>
         </p>
       </div>
     </div>

@@ -22,6 +22,6 @@ import { RolesGuard } from './presentation/guards/roles.guard';
     RolesGuard,
     { provide: USER_REPOSITORY, useClass: UserRepositoryImpl },
   ],
-  exports: [AuthService, JwtAuthGuard, RolesGuard, USER_REPOSITORY],
+  exports: [AuthService, JwtAuthGuard, RolesGuard, USER_REPOSITORY, JwtModule],
 })
 export class UsersModule {}

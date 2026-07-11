@@ -16,13 +16,18 @@ export class JwtAuthGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    let token = '';
     const authHeader = request.headers.authorization;
 
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing bearer token.');
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.slice('Bearer '.length);
+    } else if (request.cookies && request.cookies['accessToken']) {
+      token = request.cookies['accessToken'];
     }
 
-    const token = authHeader.slice('Bearer '.length);
+    if (!token) {
+      throw new UnauthorizedException('Missing access token.');
+    }
 
     try {
       request.user = this.jwtService.verify(token, {

@@ -44,7 +44,7 @@ function getContentSecurityPolicy() {
     "img-src 'self' https://res.cloudinary.com data: blob:",
     `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
-    "connect-src 'self'",
+    "connect-src 'self' http://localhost:4000",
     "font-src 'self' data:",
     "frame-ancestors 'none'",
     "base-uri 'self'",

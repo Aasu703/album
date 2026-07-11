@@ -5,9 +5,12 @@ import { ArtworkMongooseSchema, ArtworkSchemaClass } from './infrastructure/artw
 
 import { ArtworksService } from './application/artworks.service';
 
+import { UsersModule } from '../users/users.module';
+
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: ArtworkSchemaClass.name, schema: ArtworkMongooseSchema }]),
+    UsersModule,
   ],
   controllers: [ArtworksController],
   providers: [ArtworksService],

@@ -16,6 +16,7 @@ import { USER_REPOSITORY } from '../domain/user.repository';
 import type { UserRepository } from '../domain/user.repository';
 import { LoginDto } from '../presentation/dto/login.dto';
 import { RegisterDto } from '../presentation/dto/register.dto';
+import { StripeService } from '../../stripe/stripe.service';
 
 export interface AuthTokens {
   accessToken: string;
@@ -30,6 +31,7 @@ export interface PublicUser {
   phone: string | null;
   role: string;
   sellerStatus: string;
+  stripeChargesEnabled: boolean;
 }
 
 function toPublicUser(user: User): PublicUser {
@@ -41,6 +43,7 @@ function toPublicUser(user: User): PublicUser {
     phone: user.phone ?? null,
     role: user.role,
     sellerStatus: user.sellerStatus,
+    stripeChargesEnabled: user.stripeChargesEnabled ?? false,
   };
 }
 
@@ -50,6 +53,7 @@ export class AuthService {
     @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly stripeService: StripeService,
   ) {}
 
   private signTokens(user: User): AuthTokens {
@@ -175,18 +179,90 @@ export class AuthService {
     return this.signTokens(user);
   }
 
-  async verifyArtist(userId: string): Promise<PublicUser> {
+  /** Self-service: a buyer applies to become a seller. */
+  async applySeller(userId: string): Promise<PublicUser> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new UnauthorizedException('User not found.');
     }
-    
-    // Upgrade role to VERIFIED_ARTIST
-    const updated = await this.userRepository.update(user.id, { role: 'VERIFIED_ARTIST' });
+
+    if (user.sellerStatus === 'pending' || user.sellerStatus === 'approved') {
+      throw new BadRequestException(`Seller application is already ${user.sellerStatus}.`);
+    }
+
+    const updated = await this.userRepository.update(user.id, { sellerStatus: 'pending' });
     if (!updated) {
-      throw new BadRequestException('Failed to verify artist.');
+      throw new BadRequestException('Failed to submit seller application.');
     }
     return toPublicUser(updated);
+  }
+
+  async listPendingSellers(): Promise<PublicUser[]> {
+    const users = await this.userRepository.findBySellerStatus('pending');
+    return users.map(toPublicUser);
+  }
+
+  /** Admin approves a pending seller: upgrades role, creates a Stripe Connect account, and returns an onboarding link. */
+  async approveSeller(userId: string, frontendOrigin: string): Promise<{ user: PublicUser; onboardingUrl: string }> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    const stripeConnectAccountId =
+      user.stripeConnectAccountId ?? (await this.stripeService.createExpressAccount(user.email));
+
+    const updated = await this.userRepository.update(user.id, {
+      role: 'VERIFIED_ARTIST',
+      sellerStatus: 'approved',
+      stripeConnectAccountId,
+    });
+    if (!updated) {
+      throw new BadRequestException('Failed to approve seller.');
+    }
+
+    const onboardingUrl = await this.stripeService.createOnboardingLink(
+      stripeConnectAccountId,
+      `${frontendOrigin}/dashboard?stripe=refresh`,
+      `${frontendOrigin}/dashboard?stripe=return`,
+    );
+
+    return { user: toPublicUser(updated), onboardingUrl };
+  }
+
+  async rejectSeller(userId: string): Promise<PublicUser> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    const updated = await this.userRepository.update(user.id, { sellerStatus: 'rejected' });
+    if (!updated) {
+      throw new BadRequestException('Failed to reject seller application.');
+    }
+    return toPublicUser(updated);
+  }
+
+  /** Regenerates a fresh onboarding link for a seller who hasn't finished Stripe onboarding yet. */
+  async createOnboardingLink(userId: string, frontendOrigin: string): Promise<string> {
+    const user = await this.userRepository.findById(userId);
+    if (!user?.stripeConnectAccountId) {
+      throw new BadRequestException('No Stripe Connect account found for this user.');
+    }
+
+    return this.stripeService.createOnboardingLink(
+      user.stripeConnectAccountId,
+      `${frontendOrigin}/dashboard?stripe=refresh`,
+      `${frontendOrigin}/dashboard?stripe=return`,
+    );
+  }
+
+  /** Marks a connected account's charge capability once Stripe confirms via webhook. */
+  async setStripeChargesEnabled(stripeConnectAccountId: string, enabled: boolean): Promise<void> {
+    const user = await this.userRepository.findByStripeAccountId(stripeConnectAccountId);
+    if (user) {
+      await this.userRepository.update(user.id, { stripeChargesEnabled: enabled });
+    }
   }
 
   async me(userId: string): Promise<PublicUser> {

@@ -1,30 +1,36 @@
-import { BadRequestException, Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import Stripe from 'stripe';
 import { ArtworkSchemaClass } from '../../artworks/infrastructure/artwork.schema';
+import { AuthService } from '../../users/application/auth.service';
+import { USER_REPOSITORY } from '../../users/domain/user.repository';
+import type { UserRepository } from '../../users/domain/user.repository';
+import { StripeService } from '../../stripe/stripe.service';
+
+const DEFAULT_PLATFORM_FEE_PERCENT = 10;
 
 @Injectable()
 export class PaymentsService {
-  private stripe: Stripe;
-
   constructor(
-    private configService: ConfigService,
+    private readonly configService: ConfigService,
+    private readonly stripeService: StripeService,
+    private readonly authService: AuthService,
+    @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
     @InjectModel(ArtworkSchemaClass.name)
     private artworkModel: Model<ArtworkSchemaClass>,
-  ) {
-    const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
-    // We instantiate Stripe without throwing an error if the key is missing to allow the app to boot, 
-    // but the payment endpoints will fail safely if it's missing.
-    this.stripe = new Stripe(stripeKey || 'sk_test_mock', {
-      apiVersion: '2026-06-24.dahlia' as any,
-    });
+  ) {}
+
+  private platformFeePercent(): number {
+    const configured = this.configService.get<string>('PLATFORM_FEE_PERCENT');
+    const parsed = configured ? Number(configured) : NaN;
+    return Number.isFinite(parsed) ? parsed : DEFAULT_PLATFORM_FEE_PERCENT;
   }
 
   async createPaymentIntent(artworkId: string, userId: string) {
     const artwork = await this.artworkModel.findById(artworkId);
-    
+
     if (!artwork) {
       throw new NotFoundException('Artwork not found');
     }
@@ -54,12 +60,26 @@ export class PaymentsService {
       throw new BadRequestException('Invalid artwork price');
     }
 
+    const seller = await this.userRepository.findById(artwork.painterId.toString());
+    if (!seller?.stripeConnectAccountId || !seller.stripeChargesEnabled) {
+      throw new BadRequestException('The seller has not finished setting up payouts yet.');
+    }
+
+    const amountInCents = Math.round(amountToCharge * 100);
+    const applicationFeeAmount = Math.round((amountInCents * this.platformFeePercent()) / 100);
+
     try {
-      // Security: We create the intent on the backend using the price from the database, 
-      // not from the client request. Stripe amounts are in cents.
-      const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: Math.round(amountToCharge * 100),
+      // Security: We create the intent on the backend using the price from the database,
+      // not from the client request. Stripe amounts are in cents. Using a destination charge
+      // (transfer_data.destination) so funds route to the seller's own connected account,
+      // minus our platform fee, without the platform ever custodying the full amount.
+      const paymentIntent = await this.stripeService.client.paymentIntents.create({
+        amount: amountInCents,
         currency: 'usd',
+        application_fee_amount: applicationFeeAmount,
+        transfer_data: {
+          destination: seller.stripeConnectAccountId,
+        },
         metadata: {
           artworkId: artwork.id,
           userId: userId,
@@ -69,7 +89,7 @@ export class PaymentsService {
       return {
         clientSecret: paymentIntent.client_secret,
       };
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException('Failed to create payment intent');
     }
   }
@@ -84,15 +104,15 @@ export class PaymentsService {
 
     try {
       // Security Check: Cryptographically verify the webhook signature
-      event = this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
-    } catch (err: any) {
-      throw new BadRequestException(`Webhook Error: ${err.message}`);
+      event = this.stripeService.constructWebhookEvent(payload, signature, webhookSecret);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Invalid signature';
+      throw new BadRequestException(`Webhook Error: ${message}`);
     }
 
-    // Handle the event
     if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      
+
       const artworkId = paymentIntent.metadata.artworkId;
       if (artworkId) {
         // Securely mark the artwork as sold upon confirmed payment
@@ -100,6 +120,11 @@ export class PaymentsService {
           status: 'SOLD',
         });
       }
+    }
+
+    if (event.type === 'account.updated') {
+      const account = event.data.object as Stripe.Account;
+      await this.authService.setStripeChargesEnabled(account.id, Boolean(account.charges_enabled));
     }
 
     return { received: true };

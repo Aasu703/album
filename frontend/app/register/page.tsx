@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { api } from '../../lib/api';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function RegisterPage() {
   const router = useRouter();
-  
+  const { register } = useAuth();
+
   const [formData, setFormData] = useState({
     Firstname: '',
     Lastname: '',
@@ -38,21 +39,16 @@ export default function RegisterPage() {
 
     setLoading(true);
 
-    try {
-      await api.post('/auth/register', formData);
+    const result = await register(formData);
+
+    if (result.success) {
       // Automatically redirect to login page after successful registration
       router.push('/login');
-    } catch (err: any) {
-      console.error(err);
-      if (!err.response) {
-        setError(`Network Error: ${err.message}. Please check CORS or backend connection.`);
-      } else {
-        const msg = err.response?.data?.message;
-        setError(Array.isArray(msg) ? msg.join(', ') : (msg || 'Registration failed.'));
-      }
-    } finally {
-      setLoading(false);
+    } else {
+      setError(result.message || 'Registration failed.');
     }
+
+    setLoading(false);
   };
 
   return (

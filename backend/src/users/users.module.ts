@@ -9,11 +9,13 @@ import { AuthController } from './presentation/auth.controller';
 import { UsersController } from './presentation/users.controller';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 import { RolesGuard } from './presentation/guards/roles.guard';
+import { StripeModule } from '../stripe/stripe.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: UserSchemaClass.name, schema: UserMongooseSchema }]),
     JwtModule.register({}),
+    StripeModule,
   ],
   controllers: [AuthController, UsersController],
   providers: [

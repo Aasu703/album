@@ -9,7 +9,7 @@ interface ArcCarouselProps {
 
 export default function ArcCarousel({ photos }: ArcCarouselProps) {
   const [offset, setOffset] = useState(0);
-  const animRef = useRef<number>();
+  const animRef = useRef<number | undefined>(undefined);
   const lastTimeRef = useRef<number>(0);
   const [dimensions, setDimensions] = useState({
     radius: 560,

@@ -12,6 +12,7 @@ export interface User {
   sellerStatus: SellerStatus;
   stripeConnectAccountId?: string | null;
   stripeCustomerId?: string | null;
+  stripeChargesEnabled?: boolean;
   createdAt: Date;
   failedLoginAttempts?: number;
   lockoutUntil?: Date | null;
@@ -21,5 +22,15 @@ export interface User {
 
 export type NewUser = Omit<
   User,
-  'id' | 'createdAt' | 'role' | 'sellerStatus' | 'stripeConnectAccountId' | 'stripeCustomerId' | 'failedLoginAttempts' | 'lockoutUntil' | 'isMfaEnabled' | 'mfaSecret'
+  | 'id'
+  | 'createdAt'
+  | 'role'
+  | 'sellerStatus'
+  | 'stripeConnectAccountId'
+  | 'stripeCustomerId'
+  | 'stripeChargesEnabled'
+  | 'failedLoginAttempts'
+  | 'lockoutUntil'
+  | 'isMfaEnabled'
+  | 'mfaSecret'
 >;

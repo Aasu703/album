@@ -1,4 +1,4 @@
-export type UserRole = "buyer" | "seller" | "admin";
+export type UserRole = "USER" | "VERIFIED_ARTIST" | "ADMIN";
 export type SellerStatus = "none" | "pending" | "approved" | "rejected";
 
 export interface AuthUser {

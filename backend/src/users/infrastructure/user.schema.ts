@@ -33,6 +33,9 @@ export class UserSchemaClass {
   @Prop()
   stripeCustomerId?: string;
 
+  @Prop({ default: false })
+  stripeChargesEnabled: boolean;
+
   createdAt?: Date;
 
   @Prop({ default: 0 })

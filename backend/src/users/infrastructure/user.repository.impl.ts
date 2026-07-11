@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { NewUser, User } from '../domain/user.entity';
+import { NewUser, SellerStatus, User } from '../domain/user.entity';
 import { UserRepository } from '../domain/user.repository';
 import { UserDocument, UserSchemaClass } from './user.schema';
 
@@ -17,6 +17,7 @@ function toDomain(doc: UserDocument): User {
     sellerStatus: doc.sellerStatus,
     stripeConnectAccountId: doc.stripeConnectAccountId ?? null,
     stripeCustomerId: doc.stripeCustomerId ?? null,
+    stripeChargesEnabled: doc.stripeChargesEnabled ?? false,
     createdAt: doc.createdAt ?? new Date(),
     failedLoginAttempts: doc.failedLoginAttempts ?? 0,
     lockoutUntil: doc.lockoutUntil ?? null,
@@ -50,6 +51,16 @@ export class UserRepositoryImpl implements UserRepository {
 
   async findById(id: string): Promise<User | null> {
     const doc = await this.userModel.findById(id);
+    return doc ? toDomain(doc) : null;
+  }
+
+  async findBySellerStatus(status: SellerStatus): Promise<User[]> {
+    const docs = await this.userModel.find({ sellerStatus: status }).sort({ createdAt: 1 });
+    return docs.map(toDomain);
+  }
+
+  async findByStripeAccountId(stripeConnectAccountId: string): Promise<User | null> {
+    const doc = await this.userModel.findOne({ stripeConnectAccountId });
     return doc ? toDomain(doc) : null;
   }
 

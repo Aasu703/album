@@ -1,18 +1,15 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getSessionUser } from "@/lib/session";
-import { supabase } from "@/app/lib/supabase";
 import ArcCarousel from "@/components/ArcCarousel";
 import LandingScrollHandler from "@/components/LandingScrollHandler";
 
 export const metadata = {
-  title: "Album — Your memories, beautifully shared",
-  description: "Album is a photo sharing platform for creating albums, hosting photo parties with QR codes, and sharing memories.",
+  title: "Painting Marketplace — Buy and sell original art",
+  description: "Discover original paintings from independent artists. Buy at a fixed price or bid in a live auction.",
 };
 
 const PLACEHOLDER_PHOTOS = [
-  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300',
-  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=300',
+  'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5',
+  'https://images.unsplash.com/photo-1541961017774-22349e4a1262',
   'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=300',
   'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300',
   'https://images.unsplash.com/photo-1518791841217-8f162f1912da?w=300',
@@ -27,21 +24,7 @@ const PLACEHOLDER_PHOTOS = [
 
 /** Redirects root route traffic to albums. */
 export default async function Home() {
-  const user = await getSessionUser();
-  if (user) {
-    redirect("/album");
-  }
-
-  const { data: recentPhotos } = await supabase
-    .from('photos')
-    .select('url')
-    .order('created_at', { ascending: false })
-    .limit(20);
-
-  let photoUrls = recentPhotos?.map(p => p.url) ?? [];
-  if (photoUrls.length < 9) {
-    photoUrls = [...photoUrls, ...PLACEHOLDER_PHOTOS].slice(0, Math.max(9, photoUrls.length + PLACEHOLDER_PHOTOS.length));
-  }
+  const photoUrls = PLACEHOLDER_PHOTOS;
 
   return (
     <div style={{ position: 'relative', height: '100vh', overflow: 'hidden', backgroundColor: '#0A0A0A' }}>
@@ -75,9 +58,6 @@ export default async function Home() {
         }}
       />
 
-      {/* Navbar overlay wrapper to avoid background styles from generic navbar if needed, but AppShell shows generic Navbar. We'll add our own absolute overlay here if AppShell's Navbar is standard. */}
-      {/* Actually, AppShell renders Navbar automatically, which we noted earlier: we can just hide the global navbar on this page if possible or let it be. But we can build the requested layout over it for now and let it ride. */}
-
       <div
         style={{
           position: 'absolute',
@@ -101,7 +81,7 @@ export default async function Home() {
             lineHeight: 1.1,
           }}
         >
-          Your memories,<br />beautifully shared
+          Original paintings,<br />bought and sold directly
         </h1>
 
         <p
@@ -113,7 +93,7 @@ export default async function Home() {
             lineHeight: 1.6,
           }}
         >
-          Create albums, host events, and share moments with the people who matter.
+          Browse fixed-price listings or bid in a live auction. Artists get paid directly through Stripe.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>

@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { api } from '../../lib/api';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   
   // Step 1 State
   const [email, setEmail] = useState('');
@@ -25,31 +26,20 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    try {
-      // Task 2: MFA Login UI Flow
-      // Step 1: Attempt standard login or Step 2: Attempt login with MFA token
-      const payload = mfaRequired 
-        ? { email, password, mfaToken } 
-        : { email, password };
+    // Task 2: MFA Login UI Flow
+    // Step 1: Attempt standard login or Step 2: Attempt login with MFA token
+    const result = await login(email, password, mfaRequired ? mfaToken : undefined);
 
-      const res = await api.post('/auth/login', payload);
-      
+    if (result.success) {
       // On success, the backend sets HttpOnly cookies (we don't receive raw JWTs).
-      // Redirect to the dashboard
       router.push('/dashboard');
-    } catch (err: any) {
-      console.error(err);
-      if (!err.response) {
-        setError(`Network Error: ${err.message}. Please check CORS or backend connection.`);
-      } else if (err.response?.status === 401 && err.response?.data?.message === 'MFA token required.') {
-        setMfaRequired(true);
-      } else {
-        const msg = err.response?.data?.message;
-        setError(Array.isArray(msg) ? msg.join(', ') : (msg || 'Login failed. Please check your credentials.'));
-      }
-    } finally {
-      setLoading(false);
+    } else if (result.mfaRequired) {
+      setMfaRequired(true);
+    } else {
+      setError(result.message || 'Login failed. Please check your credentials.');
     }
+
+    setLoading(false);
   };
 
   return (

@@ -2,15 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '../lib/api';
-
-interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: 'USER' | 'VERIFIED_ARTIST' | 'ADMIN';
-}
+import { useAuth } from '@/components/AuthProvider';
 
 interface Artwork {
   id: string;
@@ -24,50 +16,42 @@ interface Artwork {
 
 export default function SocialFeed() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isLoading: authLoading } = useAuth();
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Task 3: Social Feed & Conditional RBAC UI
-    // Fetch the current user securely using HttpOnly cookies
-    const fetchUserAndFeed = async () => {
-      try {
-        // Assume we added a /auth/me or similar endpoint in the backend
-        // For the sake of this coursework UI, we will mock the backend call if it doesn't exist
-        // or call it if it does. The auth.service.ts has a 'me()' method.
-        const res = await api.get('/auth/me'); 
-        setUser(res.data.data.user);
-      } catch (err) {
-        router.push('/login');
-        return;
-      }
+    if (authLoading) {
+      return;
+    }
 
-      // Mock fetching artworks since the backend endpoint GET /artworks wasn't explicitly requested to be built
-      setArtworks([
-        {
-          id: '1',
-          title: 'Starry Night Resonance',
-          description: 'A modern take on a classic.',
-          imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5',
-          listingType: 'SOCIAL_ONLY',
-        },
-        {
-          id: '2',
-          title: 'Golden Horizon',
-          description: 'Sunset over the abstract mountains.',
-          imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262',
-          listingType: 'AUCTION',
-          currentHighestBid: 450,
-        }
-      ]);
-      setLoading(false);
-    };
+    if (!user) {
+      router.push('/login');
+      return;
+    }
 
-    fetchUserAndFeed();
-  }, [router]);
+    // Mock fetching artworks since the backend endpoint GET /artworks wasn't explicitly requested to be built
+    setArtworks([
+      {
+        id: '1',
+        title: 'Starry Night Resonance',
+        description: 'A modern take on a classic.',
+        imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5',
+        listingType: 'SOCIAL_ONLY',
+      },
+      {
+        id: '2',
+        title: 'Golden Horizon',
+        description: 'Sunset over the abstract mountains.',
+        imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262',
+        listingType: 'AUCTION',
+        currentHighestBid: 450,
+      },
+    ]);
+    setLoading(false);
+  }, [authLoading, user, router]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">Loading Secure Feed...</div>;
   }
 

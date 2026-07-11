@@ -2,31 +2,30 @@ import { NextResponse } from "next/server";
 
 import { apiError } from "@/app/lib/security";
 import { getSessionUser } from "@/lib/session";
+import type { AuthUser } from "@/app/lib/types";
 
 export const runtime = "nodejs";
 
-/** Returns current authenticated user from encrypted cookie session, if present. */
-export async function GET(request: Request) {
+/** Returns the current authenticated user from the encrypted cookie session, if present. */
+export async function GET() {
   try {
-    const user = await getSessionUser(request);
+    const session = await getSessionUser();
 
-    if (!user) {
+    if (!session) {
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
-    return NextResponse.json(
-      {
-        user: {
-          id: user.userId,
-          name: user.userName,
-          email: user.userEmail ?? null,
-          avatarColor: user.avatarColor,
-          isGuest: user.isGuest ?? false,
-          guestId: user.guestId ?? null,
-        },
-      },
-      { status: 200 },
-    );
+    const user: AuthUser = {
+      id: session.userId,
+      email: session.email,
+      firstName: session.firstName,
+      lastName: session.lastName,
+      phone: null,
+      role: session.role,
+      sellerStatus: session.sellerStatus,
+    };
+
+    return NextResponse.json({ user }, { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to resolve session.";
     return apiError(message, 500);

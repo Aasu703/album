@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
+
+import { backendFetch } from "@/app/lib/api-client";
 import { apiError, isTrustedOrigin } from "@/app/lib/security";
 import { getSession } from "@/lib/session";
-import { generateAvatarColor } from "@/lib/avatar";
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:5050";
+import type { AuthUser } from "@/app/lib/types";
 
 export const runtime = "nodejs";
 
-/** Logs in a user by proxying to the backend and persisting identity in session. */
+interface LoginData {
+  user: AuthUser;
+  accessToken: string;
+  refreshToken: string;
+}
+
+/** Logs in a user against the backend and persists the session/tokens in an encrypted cookie. */
 export async function POST(request: Request) {
   if (!isTrustedOrigin(request)) {
     return apiError("Request origin is not allowed.", 403);
@@ -15,47 +21,33 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+    const result = await backendFetch<{ success: boolean; data?: LoginData; message?: string }>(
+      "/auth/login",
+      { method: "POST", body },
+    );
 
-    const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-
-    const payload = await response.json();
-
-    if (!response.ok || !payload.success) {
-      return NextResponse.json(payload, { status: response.status });
+    if (!result.ok || !result.body.data) {
+      return NextResponse.json(
+        { success: false, message: result.body.message ?? "Login failed." },
+        { status: result.status },
+      );
     }
 
-    const { user, accessToken } = payload.data;
-    const avatarColor = generateAvatarColor(user.email);
+    const { user, accessToken, refreshToken } = result.body.data;
     const session = await getSession();
 
-    session.userId = user.id || user._id;
-    session.userName = `${user.Firstname} ${user.Lastname}`;
-    session.userEmail = user.email;
-    session.avatarColor = avatarColor;
-    // Store the access token in session so we can use it for backend calls if needed
-    (session as any).accessToken = accessToken;
+    session.userId = user.id;
+    session.email = user.email;
+    session.firstName = user.firstName;
+    session.lastName = user.lastName;
+    session.role = user.role;
+    session.sellerStatus = user.sellerStatus;
+    session.accessToken = accessToken;
+    session.refreshToken = refreshToken;
 
     await session.save();
 
-    return NextResponse.json(
-      {
-        success: true,
-        user: {
-          id: session.userId,
-          name: session.userName,
-          email: session.userEmail,
-          avatarColor,
-        },
-        token: accessToken
-      },
-      { status: 200 },
-    );
+    return NextResponse.json({ success: true, user }, { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to login.";
     return apiError(message, 500);

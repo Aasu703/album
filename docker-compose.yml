@@ -1,4 +1,14 @@
 services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - web
+
   traefik:
     image: traefik:v3.1
     command:
@@ -33,10 +43,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?set NEXT_PUBLIC_SUPABASE_URL}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:?set NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
     env_file:
       - .env.local
     environment:
@@ -85,3 +91,6 @@ services:
 networks:
   web:
     driver: bridge
+
+volumes:
+  mongo-data:

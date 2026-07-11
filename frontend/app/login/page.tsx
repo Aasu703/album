@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useIdentity } from "@/components/IdentityProvider";
+import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const { login } = useIdentity();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"initial" | "loading">("initial");
@@ -19,7 +19,7 @@ export default function LoginPage() {
     setError(null);
     const result = await login(email, password);
     if (result.success) {
-      router.push("/album");
+      router.push("/");
     } else {
       setError(result.message || "Login failed");
       setStatus("initial");

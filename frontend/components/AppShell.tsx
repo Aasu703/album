@@ -2,11 +2,11 @@
 
 import { usePathname } from "next/navigation";
 
+import AuthProvider from "@/components/AuthProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import IdentityProvider from "@/components/IdentityProvider";
 import Navbar from "@/components/Navbar";
 
-/** Client app shell with global identity gating and crash fallback boundary. */
+/** Client app shell with global auth context and crash fallback boundary. */
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin");
@@ -20,13 +20,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <IdentityProvider>
+    <AuthProvider>
       <ErrorBoundary>
         <div className="flex min-h-full flex-col">
           <Navbar />
           {children}
         </div>
       </ErrorBoundary>
-    </IdentityProvider>
+    </AuthProvider>
   );
 }

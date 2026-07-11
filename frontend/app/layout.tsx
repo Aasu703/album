@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Personal Photo Album",
-  description: "A personal photo album powered by Next.js, Cloudinary, and Supabase.",
+  title: "Painting Marketplace",
+  description: "Buy and sell original paintings through fixed-price listings and live auctions.",
 };
 
 /** Provides global document shell, styles, and top navigation. */

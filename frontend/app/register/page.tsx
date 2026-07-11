@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useIdentity } from "@/components/IdentityProvider";
+import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function RegisterPage() {
-  const { register } = useIdentity();
+  const { register } = useAuth();
   const [status, setStatus] = useState<"initial" | "loading">("initial");
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({

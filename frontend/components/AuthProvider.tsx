@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
+import { api } from "@/lib/api";
 import type { AuthUser } from "@/app/lib/types";
 
 interface RegisterInput {
@@ -16,89 +17,85 @@ interface RegisterInput {
 interface AuthResult {
   success: boolean;
   message?: string;
+  mfaRequired?: boolean;
 }
 
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<AuthResult>;
+  login: (email: string, password: string, mfaToken?: string) => Promise<AuthResult>;
   register: (data: RegisterInput) => Promise<AuthResult>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/** Provides cookie-backed auth state for the marketplace app. */
+function extractErrorMessage(error: unknown): string {
+  if (error && typeof error === "object" && "response" in error) {
+    const response = (error as { response?: { data?: { message?: unknown } } }).response;
+    const message = response?.data?.message;
+    if (Array.isArray(message)) {
+      return message.join(", ");
+    }
+    if (typeof message === "string") {
+      return message;
+    }
+  }
+  return error instanceof Error ? error.message : "Something went wrong.";
+}
+
+/** Provides auth state backed by NestJS httpOnly cookies (no client-side token handling). */
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  async function refreshUser() {
+    try {
+      const res = await api.get("/auth/me");
+      setUser(res.data.data.user);
+    } catch {
+      setUser(null);
+    }
+  }
+
   useEffect(() => {
-    let active = true;
-
-    void (async () => {
-      try {
-        const response = await fetch("/api/auth/me", { method: "GET", cache: "no-store" });
-        const payload = (await response.json()) as { user: AuthUser | null };
-        if (active) {
-          setUser(payload.user);
-        }
-      } catch {
-        // Leave user unauthenticated when the session check fails.
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
+    void refreshUser().finally(() => setIsLoading(false));
   }, []);
 
-  async function login(email: string, password: string): Promise<AuthResult> {
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const payload = await response.json();
-
-    if (response.ok && payload.success) {
-      setUser(payload.user);
+  async function login(email: string, password: string, mfaToken?: string): Promise<AuthResult> {
+    try {
+      const payload = mfaToken ? { email, password, mfaToken } : { email, password };
+      const res = await api.post("/auth/login", payload);
+      setUser(res.data.data.user);
       return { success: true };
+    } catch (error) {
+      const message = extractErrorMessage(error);
+      const mfaRequired = message === "MFA token required.";
+      return { success: false, message, mfaRequired };
     }
-
-    return { success: false, message: payload.message ?? "Login failed." };
   }
 
   async function register(data: RegisterInput): Promise<AuthResult> {
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    const payload = await response.json();
-
-    if (response.ok && payload.success) {
+    try {
+      await api.post("/auth/register", data);
       return { success: true };
+    } catch (error) {
+      return { success: false, message: extractErrorMessage(error) };
     }
-
-    return { success: false, message: payload.message ?? "Registration failed." };
   }
 
   async function logout() {
     setUser(null);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await api.post("/auth/logout");
     } catch {
       // Clearing local state is still best-effort even if the request fails.
     }
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

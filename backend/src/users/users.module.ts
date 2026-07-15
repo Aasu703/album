@@ -6,21 +6,24 @@ import { USER_REPOSITORY } from './domain/user.repository';
 import { UserMongooseSchema, UserSchemaClass } from './infrastructure/user.schema';
 import { UserRepositoryImpl } from './infrastructure/user.repository.impl';
 import { AuthController } from './presentation/auth.controller';
+import { UsersController } from './presentation/users.controller';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 import { RolesGuard } from './presentation/guards/roles.guard';
+import { StripeModule } from '../stripe/stripe.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: UserSchemaClass.name, schema: UserMongooseSchema }]),
     JwtModule.register({}),
+    StripeModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, UsersController],
   providers: [
     AuthService,
     JwtAuthGuard,
     RolesGuard,
     { provide: USER_REPOSITORY, useClass: UserRepositoryImpl },
   ],
-  exports: [AuthService, JwtAuthGuard, RolesGuard, USER_REPOSITORY],
+  exports: [AuthService, JwtAuthGuard, RolesGuard, USER_REPOSITORY, JwtModule],
 })
 export class UsersModule {}

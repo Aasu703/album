@@ -18,9 +18,13 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
+    // Security Check: The request object is populated by the JwtAuthGuard which 
+    // cryptographically verifies the JWT signature before this guard runs.
+    // By extracting the user role from the verified JWT payload rather than 
+    // trusting client input (e.g. body or query params), we prevent privilege escalation.
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     if (!requiredRoles.includes(request.user?.role as UserRole)) {
-      throw new ForbiddenException('You do not have permission to perform this action.');
+      throw new ForbiddenException('You do not have permission to perform this action. Required roles: ' + requiredRoles.join(', '));
     }
 
     return true;

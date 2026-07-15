@@ -21,7 +21,7 @@ export default function Navbar() {
         </Link>
         <div className="flex items-center gap-6">
           {user ? (
-            <Link href="/" className="text-sm font-medium text-white hover:text-white/80 transition-colors">
+            <Link href="/dashboard" className="text-sm font-medium text-white hover:text-white/80 transition-colors">
               {user.firstName}
             </Link>
           ) : (
@@ -44,18 +44,34 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-[#E9ECEF] bg-white/95 backdrop-blur">
       <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-lg font-bold tracking-tight text-[#1A1A2E] transition hover:text-[#4D96FF]"
-        >
-          <span aria-hidden="true">🎨</span>
-          Painting Marketplace
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-lg font-bold tracking-tight text-[#1A1A2E] transition hover:text-[#4D96FF]"
+          >
+            <span aria-hidden="true">🎨</span>
+            Painting Marketplace
+          </Link>
+          <Link
+            href="/paintings"
+            className="hidden text-sm font-semibold text-[#6C757D] transition hover:text-[#4D96FF] sm:inline"
+          >
+            Browse
+          </Link>
+        </div>
 
         <div className="flex items-center gap-3">
           {user ? (
             <div className="flex items-center gap-2">
-              <Avatar name={displayName} color={generateAvatarColor(user.email)} size="sm" />
+              <Link
+                href="/orders"
+                className="hidden text-sm font-semibold text-[#6C757D] transition hover:text-[#4D96FF] sm:inline"
+              >
+                My Orders
+              </Link>
+              <Link href="/dashboard" className="flex items-center gap-2">
+                <Avatar name={displayName} color={generateAvatarColor(user.email)} size="sm" />
+              </Link>
               <span className="hidden max-w-32 truncate text-sm font-semibold text-[#1A1A2E] sm:inline">
                 {displayName}
               </span>

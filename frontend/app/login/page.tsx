@@ -1,81 +1,129 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useAuth } from "@/components/AuthProvider";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function LoginPage() {
-  const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [status, setStatus] = useState<"initial" | "loading">("initial");
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { login } = useAuth();
+  
+  // Step 1 State
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  
+  // Step 2 State (MFA)
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaToken, setMfaToken] = useState('');
+  
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatus("loading");
-    setError(null);
-    const result = await login(email, password);
+    setError('');
+    setLoading(true);
+
+    // Task 2: MFA Login UI Flow
+    // Step 1: Attempt standard login or Step 2: Attempt login with MFA token
+    const result = await login(email, password, mfaRequired ? mfaToken : undefined);
+
     if (result.success) {
-      router.push("/");
+      // On success, the backend sets HttpOnly cookies (we don't receive raw JWTs).
+      router.push('/dashboard');
+    } else if (result.mfaRequired) {
+      setMfaRequired(true);
     } else {
-      setError(result.message || "Login failed");
-      setStatus("initial");
+      setError(result.message || 'Login failed. Please check your credentials.');
     }
-  }
+
+    setLoading(false);
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0A0A0A] px-4">
-      <div className="w-full max-w-md space-y-8 rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-white">Welcome back</h1>
-          <p className="mt-2 text-white/50">Log in to your account to continue</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-white/70">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#4D96FF]"
-                placeholder="you@example.com"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-white/70">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#4D96FF]"
-                placeholder="••••••••"
-              />
-            </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100">
+      <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-xl shadow-2xl border border-gray-700">
+        <h1 className="text-3xl font-bold text-center text-white">Sign In</h1>
+        
+        {error && (
+          <div className="p-3 text-sm text-red-200 bg-red-900/50 border border-red-800 rounded-lg">
+            {error}
           </div>
+        )}
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+        <form onSubmit={handleLogin} className="space-y-4">
+          {!mfaRequired ? (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none pr-12"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="w-5 h-5" />
+                    ) : (
+                      <EyeIcon className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <label className="block text-sm font-medium mb-1 text-indigo-300">
+                Authenticator App Code
+              </label>
+              <p className="text-xs text-gray-400 mb-3">
+                Two-factor authentication is required to secure your account.
+              </p>
+              <input
+                type="text"
+                maxLength={6}
+                value={mfaToken}
+                onChange={(e) => setMfaToken(e.target.value)}
+                placeholder="000000"
+                className="w-full p-3 text-center text-2xl tracking-[0.5em] bg-gray-900 border border-indigo-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                required
+              />
+            </div>
+          )}
 
           <button
             type="submit"
-            disabled={status === "loading"}
-            className="w-full rounded-full bg-[#4D96FF] py-3 font-semibold text-white transition hover:bg-[#3d85ee] disabled:opacity-50"
+            disabled={loading}
+            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/50 text-white font-semibold rounded-lg shadow-md transition-all disabled:opacity-50"
           >
-            {status === "loading" ? "Logging in..." : "Log In"}
+            {loading ? 'Authenticating...' : mfaRequired ? 'Verify & Sign In' : 'Sign In'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-white/50">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-[#4D96FF] hover:underline">
-            Register
-          </Link>
+        <p className="text-center text-sm text-gray-400 mt-4">
+          Don't have an account?{' '}
+          <button type="button" onClick={() => router.push('/register')} className="text-indigo-400 hover:text-indigo-300 font-medium">
+            Sign Up
+          </button>
         </p>
       </div>
     </div>

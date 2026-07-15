@@ -63,6 +63,12 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           {user ? (
             <div className="flex items-center gap-2">
+              <Link
+                href="/orders"
+                className="hidden text-sm font-semibold text-[#6C757D] transition hover:text-[#4D96FF] sm:inline"
+              >
+                My Orders
+              </Link>
               <Link href="/dashboard" className="flex items-center gap-2">
                 <Avatar name={displayName} color={generateAvatarColor(user.email)} size="sm" />
               </Link>

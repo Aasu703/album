@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import type { Artwork, ArtworkPainter } from "@/app/lib/types";
 import BidBox from "./_components/BidBox";
+import BuyNowCheckout from "./_components/BuyNowCheckout";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
@@ -23,8 +24,15 @@ async function fetchArtwork(id: string): Promise<Artwork | null> {
   return payload.data.artwork as Artwork;
 }
 
-export default async function PaintingDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PaintingDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ redirect_status?: string }>;
+}) {
   const { id } = await params;
+  const { redirect_status: redirectStatus } = await searchParams;
   const artwork = await fetchArtwork(id);
 
   if (!artwork) {
@@ -48,6 +56,16 @@ export default async function PaintingDetailPage({ params }: { params: Promise<{
 
         <p className="text-sm leading-relaxed text-[#1A1A2E]">{artwork.description}</p>
 
+        {redirectStatus === "succeeded" ? (
+          <p className="rounded-xl border border-[#6BCB77]/40 bg-[#6BCB77]/10 p-3 text-sm font-semibold text-[#2f7a3c]">
+            Purchase complete! The artist has been notified.
+          </p>
+        ) : redirectStatus === "processing" ? (
+          <p className="rounded-xl border border-[#FFC93C]/40 bg-[#FFC93C]/10 p-3 text-sm font-semibold text-[#8a6a14]">
+            Your payment is processing — this page will update once it's confirmed.
+          </p>
+        ) : null}
+
         {artwork.status === "SOLD" ? (
           <p className="rounded-xl border border-[#E9ECEF] bg-[#F8F9FA] p-3 text-sm font-semibold text-[#6C757D]">
             This piece has been sold.
@@ -55,17 +73,7 @@ export default async function PaintingDetailPage({ params }: { params: Promise<{
         ) : artwork.listingType === "AUCTION" ? (
           <BidBox artwork={artwork} />
         ) : artwork.listingType === "FOR_SALE" ? (
-          <div className="space-y-2">
-            <p className="text-2xl font-bold text-[#1A1A2E]">${artwork.price}</p>
-            <button
-              type="button"
-              disabled
-              title="Checkout is coming soon"
-              className="min-h-11 w-full rounded-full bg-[#4D96FF] px-5 text-sm font-semibold text-white shadow-sm opacity-50"
-            >
-              Buy Now (checkout coming soon)
-            </button>
-          </div>
+          <BuyNowCheckout artwork={artwork} />
         ) : null}
       </div>
     </main>

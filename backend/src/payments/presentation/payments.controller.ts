@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Headers, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Headers, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { PaymentsService } from '../application/payments.service';
 import { JwtAuthGuard, AuthenticatedRequest } from '../../users/presentation/guards/jwt-auth.guard';
@@ -16,6 +16,13 @@ export class PaymentsController {
     @CurrentUser() user: AuthenticatedRequest['user'],
   ) {
     return await this.paymentsService.createPaymentIntent(artworkId, user.sub);
+  }
+
+  @Get('my-orders')
+  @UseGuards(JwtAuthGuard)
+  async myOrders(@CurrentUser() user: AuthenticatedRequest['user']) {
+    const orders = await this.paymentsService.getMyOrders(user.sub);
+    return { success: true, data: { orders } };
   }
 
   // Task 3: Cryptographically Secure Stripe Webhook

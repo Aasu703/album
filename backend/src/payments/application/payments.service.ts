@@ -1,13 +1,14 @@
 import { BadRequestException, Inject, Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import Stripe from 'stripe';
 import { ArtworkSchemaClass } from '../../artworks/infrastructure/artwork.schema';
 import { AuthService } from '../../users/application/auth.service';
 import { USER_REPOSITORY } from '../../users/domain/user.repository';
 import type { UserRepository } from '../../users/domain/user.repository';
 import { StripeService } from '../../stripe/stripe.service';
+import { OrderSchemaClass } from '../infrastructure/order.schema';
 
 const DEFAULT_PLATFORM_FEE_PERCENT = 10;
 
@@ -20,6 +21,8 @@ export class PaymentsService {
     @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
     @InjectModel(ArtworkSchemaClass.name)
     private artworkModel: Model<ArtworkSchemaClass>,
+    @InjectModel(OrderSchemaClass.name)
+    private orderModel: Model<OrderSchemaClass>,
   ) {}
 
   private platformFeePercent(): number {
@@ -65,15 +68,32 @@ export class PaymentsService {
       throw new BadRequestException('The seller has not finished setting up payouts yet.');
     }
 
+    // Reuse an existing pending order for this artwork+buyer instead of creating a
+    // duplicate PaymentIntent every time the buyer reopens the checkout form.
+    const existingPending = await this.orderModel.findOne({
+      artworkId: artwork._id,
+      buyerId: new Types.ObjectId(userId),
+      status: 'pending',
+    });
+    if (existingPending) {
+      const existingIntent = await this.stripeService.client.paymentIntents.retrieve(
+        existingPending.stripePaymentIntentId,
+      );
+      if (existingIntent.status !== 'canceled') {
+        return { clientSecret: existingIntent.client_secret };
+      }
+    }
+
     const amountInCents = Math.round(amountToCharge * 100);
     const applicationFeeAmount = Math.round((amountInCents * this.platformFeePercent()) / 100);
 
+    let paymentIntent: Stripe.PaymentIntent;
     try {
       // Security: We create the intent on the backend using the price from the database,
       // not from the client request. Stripe amounts are in cents. Using a destination charge
       // (transfer_data.destination) so funds route to the seller's own connected account,
       // minus our platform fee, without the platform ever custodying the full amount.
-      const paymentIntent = await this.stripeService.client.paymentIntents.create({
+      paymentIntent = await this.stripeService.client.paymentIntents.create({
         amount: amountInCents,
         currency: 'usd',
         application_fee_amount: applicationFeeAmount,
@@ -85,13 +105,28 @@ export class PaymentsService {
           userId: userId,
         },
       });
-
-      return {
-        clientSecret: paymentIntent.client_secret,
-      };
     } catch {
       throw new InternalServerErrorException('Failed to create payment intent');
     }
+
+    await this.orderModel.create({
+      artworkId: artwork._id,
+      buyerId: new Types.ObjectId(userId),
+      sellerId: artwork.painterId,
+      amount: amountToCharge,
+      platformFeeAmount: applicationFeeAmount / 100,
+      stripePaymentIntentId: paymentIntent.id,
+      status: 'pending',
+    });
+
+    return { clientSecret: paymentIntent.client_secret };
+  }
+
+  async getMyOrders(userId: string) {
+    return this.orderModel
+      .find({ buyerId: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .populate('artworkId', 'title imageUrl');
   }
 
   async handleWebhook(signature: string, payload: Buffer) {
@@ -120,6 +155,18 @@ export class PaymentsService {
           status: 'SOLD',
         });
       }
+      await this.orderModel.updateOne(
+        { stripePaymentIntentId: paymentIntent.id },
+        { $set: { status: 'paid' } },
+      );
+    }
+
+    if (event.type === 'payment_intent.payment_failed') {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      await this.orderModel.updateOne(
+        { stripePaymentIntentId: paymentIntent.id },
+        { $set: { status: 'failed' } },
+      );
     }
 
     if (event.type === 'account.updated') {

@@ -17,10 +17,10 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -51,13 +51,16 @@ export default function RegisterPage() {
     setLoading(false);
   };
 
+  const inputClass =
+    'w-full p-3 bg-surface-raised border border-hairline rounded-lg focus:ring-2 focus:ring-accent focus:border-accent transition-colors duration-300 ease-out outline-none';
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-100 p-4">
-      <div className="w-full max-w-md p-8 space-y-6 bg-gray-900 rounded-xl shadow-2xl border border-gray-800">
-        <h1 className="text-3xl font-bold text-center text-white">Create Account</h1>
-        
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
+      <div className="w-full max-w-md p-8 space-y-6 bg-surface rounded-2xl shadow-2xl border border-hairline">
+        <h1 className="font-serif text-3xl font-semibold text-center text-foreground">Create Account</h1>
+
         {error && (
-          <div className="p-3 text-sm text-red-200 bg-red-900/50 border border-red-800 rounded-lg">
+          <div className="p-3 text-sm text-danger bg-danger/10 border border-danger/40 rounded-lg">
             {error}
           </div>
         )}
@@ -65,68 +68,68 @@ export default function RegisterPage() {
         <form onSubmit={handleRegister} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">First Name</label>
+              <label className="block text-sm font-medium mb-1 text-muted">First Name</label>
               <input
                 type="text"
                 name="Firstname"
                 value={formData.Firstname}
                 onChange={handleChange}
-                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                className={inputClass}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Last Name</label>
+              <label className="block text-sm font-medium mb-1 text-muted">Last Name</label>
               <input
                 type="text"
                 name="Lastname"
                 value={formData.Lastname}
                 onChange={handleChange}
-                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                className={inputClass}
                 required
               />
             </div>
           </div>
-          
+
           <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
+            <label className="block text-sm font-medium mb-1 text-muted">Email</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className={inputClass}
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Phone Number <span className="text-gray-500 text-xs">(Optional)</span></label>
+            <label className="block text-sm font-medium mb-1 text-muted">Phone Number <span className="text-muted/70 text-xs">(Optional)</span></label>
             <input
               type="tel"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
+            <label className="block text-sm font-medium mb-1 text-muted">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none pr-12"
+                className={`${inputClass} pr-12`}
                 required
                 minLength={8}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted transition-colors duration-300 ease-out hover:text-foreground"
               >
                 {showPassword ? (
                   <EyeSlashIcon className="w-5 h-5" />
@@ -138,21 +141,21 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Confirm Password</label>
+            <label className="block text-sm font-medium mb-1 text-muted">Confirm Password</label>
             <div className="relative">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none pr-12"
+                className={`${inputClass} pr-12`}
                 required
                 minLength={8}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted transition-colors duration-300 ease-out hover:text-foreground"
               >
                 {showConfirmPassword ? (
                   <EyeSlashIcon className="w-5 h-5" />
@@ -166,15 +169,15 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/50 text-white font-semibold rounded-lg shadow-md transition-all disabled:opacity-50 mt-2"
+            className="w-full py-3 px-4 bg-accent hover:bg-accent-hover focus:ring-4 focus:ring-accent/40 text-background font-semibold rounded-lg shadow-md transition-colors duration-300 ease-out disabled:opacity-50 mt-2"
           >
             {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-400 mt-4">
+        <p className="text-center text-sm text-muted mt-4">
           Already have an account?{' '}
-          <button type="button" onClick={() => router.push('/login')} className="text-indigo-400 hover:text-indigo-300 font-medium">
+          <button type="button" onClick={() => router.push('/login')} className="text-accent transition-colors duration-300 ease-out hover:text-accent-hover font-medium">
             Sign In
           </button>
         </p>

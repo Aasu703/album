@@ -17,19 +17,19 @@ export default function Navbar() {
       <header className="absolute top-0 left-0 right-0 z-10 flex h-16 items-center justify-between px-6 bg-transparent">
         <Link href="/" className="flex items-center gap-2">
           <span aria-hidden="true" className="text-xl">🎨</span>
-          <span className="text-lg font-bold text-white tracking-tight">Painting Gallery</span>
+          <span className="font-serif text-lg font-semibold tracking-tight text-foreground">Painting Gallery</span>
         </Link>
         <div className="flex items-center gap-6">
           {user ? (
-            <Link href="/dashboard" className="text-sm font-medium text-white hover:text-white/80 transition-colors">
+            <Link href="/dashboard" className="text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:text-accent">
               {user.firstName}
             </Link>
           ) : (
             <>
-              <Link href="/login" className="text-sm font-medium text-white hover:text-white/80 transition-colors">
+              <Link href="/login" className="text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:text-accent">
                 Log in
               </Link>
-              <Link href="/register" className="text-sm font-medium text-white hover:text-white/80 transition-colors">
+              <Link href="/register" className="text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:text-accent">
                 Sign up
               </Link>
             </>
@@ -42,19 +42,19 @@ export default function Navbar() {
   const displayName = user ? `${user.firstName} ${user.lastName}` : "";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-800 bg-gray-950/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-hairline bg-background/95 backdrop-blur">
       <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         <div className="flex items-center gap-4">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-lg font-bold tracking-tight text-white transition hover:text-indigo-400"
+            className="inline-flex items-center gap-2 font-serif text-lg font-semibold tracking-tight text-foreground transition-colors duration-300 ease-out hover:text-accent"
           >
             <span aria-hidden="true">🎨</span>
             Painting Gallery
           </Link>
           <Link
             href="/paintings"
-            className="hidden text-sm font-semibold text-gray-400 transition hover:text-indigo-400 sm:inline"
+            className="hidden text-sm font-semibold text-muted transition-colors duration-300 ease-out hover:text-accent sm:inline"
           >
             Browse
           </Link>
@@ -66,7 +66,7 @@ export default function Navbar() {
               {user.role === "ADMIN" ? (
                 <Link
                   href="/admin"
-                  className="hidden text-sm font-semibold text-gray-400 transition hover:text-indigo-400 sm:inline"
+                  className="hidden text-sm font-semibold text-muted transition-colors duration-300 ease-out hover:text-accent sm:inline"
                 >
                   Admin
                 </Link>
@@ -74,13 +74,13 @@ export default function Navbar() {
               <Link href="/dashboard" className="flex items-center gap-2">
                 <Avatar name={displayName} color={generateAvatarColor(user.email)} size="sm" />
               </Link>
-              <span className="hidden max-w-32 truncate text-sm font-semibold text-white sm:inline">
+              <span className="hidden max-w-32 truncate text-sm font-semibold text-foreground sm:inline">
                 {displayName}
               </span>
               <button
                 type="button"
                 onClick={() => void logout()}
-                className="min-h-10 rounded-full border border-gray-700 bg-gray-900 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:border-indigo-500 hover:text-indigo-400"
+                className="min-h-10 rounded-full border border-hairline bg-surface px-3 py-1.5 text-sm font-semibold text-foreground shadow-sm transition-colors duration-300 ease-out hover:border-accent hover:text-accent"
               >
                 Log out
               </button>
@@ -89,13 +89,13 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="min-h-10 rounded-full border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-indigo-500 hover:text-indigo-400"
+                className="min-h-10 rounded-full border border-hairline bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors duration-300 ease-out hover:border-accent hover:text-accent"
               >
                 Log in
               </Link>
               <Link
                 href="/register"
-                className="min-h-10 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+                className="min-h-10 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-background shadow-sm transition-colors duration-300 ease-out hover:bg-accent-hover"
               >
                 Sign up
               </Link>

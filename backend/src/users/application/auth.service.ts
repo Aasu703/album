@@ -267,6 +267,29 @@ export class AuthService {
     return toPublicUser(user);
   }
 
+  /** Self-service: an authenticated user updates their own profile details. */
+  async updateProfile(
+    userId: string,
+    dto: { firstName?: string; lastName?: string; phone?: string },
+  ): Promise<PublicUser> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    // Patch only the fields that were actually provided, trimming free-text input.
+    const patch: Partial<User> = {};
+    if (dto.firstName !== undefined) patch.firstName = dto.firstName.trim();
+    if (dto.lastName !== undefined) patch.lastName = dto.lastName.trim();
+    if (dto.phone !== undefined) patch.phone = dto.phone.trim() || null;
+
+    const updated = await this.userRepository.update(user.id, patch);
+    if (!updated) {
+      throw new BadRequestException('Failed to update profile.');
+    }
+    return toPublicUser(updated);
+  }
+
   // ---- Admin: user & painter management ----
 
   async listUsers(role?: UserRole): Promise<PublicUser[]> {

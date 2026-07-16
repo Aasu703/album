@@ -26,14 +26,14 @@ export default function AdminNav() {
   }, [isLoading, user, router]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-800 bg-gray-950">
+    <header className="sticky top-0 z-40 border-b border-hairline bg-background">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between">
-          <Link href="/admin" className="flex items-center gap-2 text-lg font-bold text-white">
+          <Link href="/admin" className="flex items-center gap-2 font-serif text-lg font-semibold text-foreground">
             <span aria-hidden="true">🛡️</span>
             Admin Console
           </Link>
-          <Link href="/dashboard" className="text-sm font-semibold text-gray-400 transition hover:text-indigo-400">
+          <Link href="/dashboard" className="text-sm font-semibold text-muted transition-colors duration-300 ease-out hover:text-accent">
             Exit to site
           </Link>
         </div>
@@ -44,8 +44,8 @@ export default function AdminNav() {
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                  isActive ? "bg-indigo-600 text-white" : "text-gray-400 hover:bg-gray-900 hover:text-white"
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-300 ease-out ${
+                  isActive ? "bg-accent text-background" : "text-muted hover:bg-surface hover:text-foreground"
                 }`}
               >
                 {tab.label}

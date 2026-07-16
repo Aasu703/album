@@ -8,16 +8,16 @@ import { useAuth } from '@/components/AuthProvider';
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  
+
   // Step 1 State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // Step 2 State (MFA)
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaToken, setMfaToken] = useState('');
-  
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -43,12 +43,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-100 p-4">
-      <div className="w-full max-w-md p-8 space-y-6 bg-gray-900 rounded-xl shadow-2xl border border-gray-800">
-        <h1 className="text-3xl font-bold text-center text-white">Sign In</h1>
-        
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
+      <div className="w-full max-w-md p-8 space-y-6 bg-surface rounded-2xl shadow-2xl border border-hairline">
+        <h1 className="font-serif text-3xl font-semibold text-center text-foreground">Sign In</h1>
+
         {error && (
-          <div className="p-3 text-sm text-red-200 bg-red-900/50 border border-red-800 rounded-lg">
+          <div className="p-3 text-sm text-danger bg-danger/10 border border-danger/40 rounded-lg">
             {error}
           </div>
         )}
@@ -57,29 +57,29 @@ export default function LoginPage() {
           {!mfaRequired ? (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
+                <label className="block text-sm font-medium mb-1 text-muted">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                  className="w-full p-3 bg-surface-raised border border-hairline rounded-lg focus:ring-2 focus:ring-accent focus:border-accent transition-colors duration-300 ease-out outline-none"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Password</label>
+                <label className="block text-sm font-medium mb-1 text-muted">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none pr-12"
+                    className="w-full p-3 bg-surface-raised border border-hairline rounded-lg focus:ring-2 focus:ring-accent focus:border-accent transition-colors duration-300 ease-out outline-none pr-12"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted transition-colors duration-300 ease-out hover:text-foreground"
                   >
                     {showPassword ? (
                       <EyeSlashIcon className="w-5 h-5" />
@@ -92,10 +92,10 @@ export default function LoginPage() {
             </>
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <label className="block text-sm font-medium mb-1 text-indigo-300">
+              <label className="block text-sm font-medium mb-1 text-accent">
                 Authenticator App Code
               </label>
-              <p className="text-xs text-gray-400 mb-3">
+              <p className="text-xs text-muted mb-3">
                 Two-factor authentication is required to secure your account.
               </p>
               <input
@@ -104,7 +104,7 @@ export default function LoginPage() {
                 value={mfaToken}
                 onChange={(e) => setMfaToken(e.target.value)}
                 placeholder="000000"
-                className="w-full p-3 text-center text-2xl tracking-[0.5em] bg-gray-800 border border-indigo-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full p-3 text-center text-2xl tracking-[0.5em] bg-surface-raised border border-accent/50 rounded-lg focus:ring-2 focus:ring-accent outline-none"
                 required
               />
             </div>
@@ -113,15 +113,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/50 text-white font-semibold rounded-lg shadow-md transition-all disabled:opacity-50"
+            className="w-full py-3 px-4 bg-accent hover:bg-accent-hover focus:ring-4 focus:ring-accent/40 text-background font-semibold rounded-lg shadow-md transition-colors duration-300 ease-out disabled:opacity-50"
           >
             {loading ? 'Authenticating...' : mfaRequired ? 'Verify & Sign In' : 'Sign In'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-400 mt-4">
+        <p className="text-center text-sm text-muted mt-4">
           Don&apos;t have an account?{' '}
-          <button type="button" onClick={() => router.push('/register')} className="text-indigo-400 hover:text-indigo-300 font-medium">
+          <button type="button" onClick={() => router.push('/register')} className="text-accent transition-colors duration-300 ease-out hover:text-accent-hover font-medium">
             Sign Up
           </button>
         </p>

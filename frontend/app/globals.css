@@ -2,51 +2,85 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ── Champagne Noir ───────────────────────────────────────────────────────
+   Near-black surfaces, warm ivory text, a muted brass/gold accent.
+   Auction-house palette: gold reads as the single "action" colour. */
 :root {
-  --primary: #4d96ff;
-  --success: #6bcb77;
-  --danger: #ff6b6b;
-  --warning: #ffc93c;
-  --surface: #ffffff;
-  --background: #f8f9fa;
-  --border: #e9ecef;
-  --text-primary: #1a1a2e;
-  --text-secondary: #6c757d;
-  --foreground: var(--text-primary);
+  --background: #0b0b0c;
+  --surface: #16161a;
+  --surface-raised: #1d1d22;
+  --foreground: #f5f0e8;
+  --muted: #a39a8b;
+  --hairline: #2a2a2c;
+  --accent: #c9a66b;
+  --accent-hover: #b4915a;
+  --accent-soft: rgba(201, 166, 107, 0.14);
+  --success: #6fbf8b;
+  --danger: #e2665a;
+  --warning: #d98c3c;
 }
 
+/* The app renders dark by default; keep .dark aligned so the toggle can't
+   strand a page in a half-lit state. */
 .dark {
-  --background: #030712;
-  --foreground: #f3f4f6;
+  --background: #0b0b0c;
+  --surface: #16161a;
+  --surface-raised: #1d1d22;
+  --foreground: #f5f0e8;
+  --muted: #a39a8b;
+  --hairline: #2a2a2c;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-hairline: var(--hairline);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-playfair);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background:
-    radial-gradient(circle at 10% 5%, rgba(77, 150, 255, 0.08), transparent 35%),
-    radial-gradient(circle at 90% 90%, rgba(107, 203, 119, 0.08), transparent 35%),
+    radial-gradient(circle at 12% 0%, rgba(201, 166, 107, 0.06), transparent 42%),
+    radial-gradient(circle at 88% 100%, rgba(201, 166, 107, 0.05), transparent 45%),
     var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Serif display face for headings that opt in via `font-serif`. */
+.font-serif {
+  font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
+}
+
 main {
-  animation: page-fade-in 200ms ease-out;
+  animation: page-fade-in 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes page-fade-in {
   from {
     opacity: 0;
+    transform: translateY(6px);
   }
 
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -63,7 +97,7 @@ main {
 }
 
 .photo-card-enter {
-  animation: photo-card-enter 300ms ease-out;
+  animation: photo-card-enter 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes reaction-bounce {
@@ -81,5 +115,32 @@ main {
 }
 
 .reaction-bounce {
-  animation: reaction-bounce 220ms ease-out;
+  animation: reaction-bounce 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Scroll-reveal primitive used on the landing page (see ScrollReveal.tsx). */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

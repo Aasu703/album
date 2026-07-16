@@ -7,6 +7,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { BanUserDto } from './dto/ban-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('users')
 // Apply guards globally to the controller for defense-in-depth
@@ -18,6 +19,16 @@ export class UsersController {
   @Post('apply-seller')
   async applySeller(@CurrentUser() user: AuthenticatedRequest['user']) {
     const updated = await this.authService.applySeller(user.sub);
+    return { success: true, data: { user: updated } };
+  }
+
+  // Self-service: any authenticated user can update their own profile details.
+  @Patch('me')
+  async updateProfile(
+    @Body() dto: UpdateProfileDto,
+    @CurrentUser() user: AuthenticatedRequest['user'],
+  ) {
+    const updated = await this.authService.updateProfile(user.sub, dto);
     return { success: true, data: { user: updated } };
   }
 

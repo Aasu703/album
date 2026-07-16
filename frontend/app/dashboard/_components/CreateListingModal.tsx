@@ -88,58 +88,58 @@ export default function CreateListingModal({ isOpen, onClose, onCreated }: Creat
   }
 
   return (
-    <div className="fixed inset-0 z-90 flex items-center justify-center bg-black/60 px-4 py-6">
-      <div className="w-full max-w-lg space-y-4 rounded-3xl bg-gray-900 p-6 shadow-2xl border border-gray-700">
+    <div className="fixed inset-0 z-90 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
+      <div className="w-full max-w-lg space-y-4 rounded-3xl bg-surface p-6 shadow-2xl border border-hairline">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">Post a painting</h2>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">
+          <h2 className="font-serif text-xl font-semibold text-foreground">Post a painting</h2>
+          <button type="button" onClick={onClose} className="text-muted transition-colors duration-300 ease-out hover:text-foreground">
             ✕
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-300">Title</label>
+            <label className="block text-sm font-medium mb-1 text-muted">Title</label>
             <input
               type="text"
               required
               maxLength={140}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full p-3 bg-surface-raised border border-hairline rounded-lg text-foreground outline-none transition-colors duration-300 ease-out focus:ring-2 focus:ring-accent focus:border-accent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-300">Description</label>
+            <label className="block text-sm font-medium mb-1 text-muted">Description</label>
             <textarea
               required
               maxLength={4000}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full p-3 bg-surface-raised border border-hairline rounded-lg text-foreground outline-none transition-colors duration-300 ease-out focus:ring-2 focus:ring-accent focus:border-accent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-300">Image</label>
+            <label className="block text-sm font-medium mb-1 text-muted">Image</label>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
               required
               onChange={handleFileChange}
-              className="w-full text-sm text-gray-300"
+              className="w-full text-sm text-muted file:mr-3 file:rounded-full file:border-0 file:bg-accent-soft file:px-4 file:py-2 file:text-sm file:font-semibold file:text-accent"
             />
-            <p className="mt-1 text-xs text-gray-500">JPEG, PNG, or WEBP. Max 10MB.</p>
+            <p className="mt-1 text-xs text-muted">JPEG, PNG, or WEBP. Max 10MB.</p>
           </div>
 
-          {error ? <p className="text-sm text-red-400">{error}</p> : null}
+          {error ? <p className="text-sm text-danger">{error}</p> : null}
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition-all disabled:opacity-50"
+            className="w-full py-3 px-4 bg-accent hover:bg-accent-hover text-background font-semibold rounded-lg shadow-md transition-colors duration-300 ease-out disabled:opacity-50"
           >
             {submitting ? "Posting..." : "Post painting"}
           </button>

@@ -40,8 +40,8 @@ export default async function PaintingsPage({
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <section className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight text-white">Gallery</h1>
-        <p className="text-sm text-gray-400">Browse original paintings from independent artists and react to what you love.</p>
+        <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">Gallery</h1>
+        <p className="text-sm text-muted">Browse original paintings from independent artists and react to what you love.</p>
       </section>
 
       <form className="flex gap-2">
@@ -50,18 +50,18 @@ export default async function PaintingsPage({
           name="search"
           defaultValue={params.search}
           placeholder="Search paintings..."
-          className="min-h-11 flex-1 rounded-full border border-gray-700 bg-gray-900 px-4 text-sm text-white outline-none focus:border-indigo-500"
+          className="min-h-11 flex-1 rounded-full border border-hairline bg-surface px-4 text-sm text-foreground outline-none transition-colors duration-300 ease-out focus:border-accent"
         />
         <button
           type="submit"
-          className="min-h-11 rounded-full bg-indigo-600 px-5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          className="min-h-11 rounded-full bg-accent px-5 text-sm font-semibold text-background transition-colors duration-300 ease-out hover:bg-accent-hover"
         >
           Search
         </button>
       </form>
 
       {result.items.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-gray-800 bg-gray-900/50 p-10 text-center text-sm text-gray-400">
+        <p className="rounded-2xl border border-dashed border-hairline bg-surface/50 p-10 text-center text-sm text-muted">
           No paintings match yet.
         </p>
       ) : (
@@ -70,20 +70,20 @@ export default async function PaintingsPage({
             <Link
               key={artwork.id}
               href={`/paintings/${artwork.id}`}
-              className="group overflow-hidden rounded-2xl border border-gray-800 bg-gray-900 shadow-sm transition hover:border-indigo-500/50"
+              className="group overflow-hidden rounded-2xl border border-hairline bg-surface shadow-sm transition-colors duration-300 ease-out hover:border-accent/60"
             >
-              <div className="relative aspect-square bg-gray-800">
+              <div className="relative aspect-square bg-surface-raised">
                 <Image
                   src={artwork.imageUrl}
                   alt={artwork.title}
                   fill
                   sizes="(max-width: 640px) 50vw, 25vw"
-                  className="object-cover transition group-hover:scale-105"
+                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                 />
               </div>
               <div className="space-y-1 p-3">
-                <h2 className="truncate text-sm font-bold text-white">{artwork.title}</h2>
-                <p className="truncate text-xs text-gray-400">{painterName(artwork.painterId)}</p>
+                <h2 className="truncate text-sm font-bold text-foreground">{artwork.title}</h2>
+                <p className="truncate text-xs text-muted">{painterName(artwork.painterId)}</p>
               </div>
             </Link>
           ))}

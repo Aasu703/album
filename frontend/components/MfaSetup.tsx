@@ -76,22 +76,22 @@ export default function MfaSetup() {
   if (!user) return null;
 
   return (
-    <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 space-y-4">
+    <div className="rounded-2xl border border-hairline bg-surface p-6 space-y-4">
       <div>
-        <h2 className="text-lg font-bold text-white">Two-factor authentication</h2>
-        <p className="text-sm text-gray-400">
+        <h2 className="font-serif text-lg font-semibold text-foreground">Two-factor authentication</h2>
+        <p className="text-sm text-muted">
           Protect your account with a time-based one-time code from an authenticator app (Google Authenticator, Authy, etc.).
         </p>
       </div>
 
-      {status ? <p className="text-sm font-semibold text-emerald-400">{status}</p> : null}
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      {status ? <p className="text-sm font-semibold text-success">{status}</p> : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
 
       {qrCode ? (
         <form onSubmit={confirmEnable} className="space-y-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qrCode} alt="Scan this QR code with your authenticator app" className="h-40 w-40 rounded-lg bg-white p-2" />
-          <p className="text-xs text-gray-500 break-all">Manual entry key: {secret}</p>
+          <p className="text-xs text-muted break-all">Manual entry key: {secret}</p>
           <input
             type="text"
             inputMode="numeric"
@@ -99,12 +99,12 @@ export default function MfaSetup() {
             value={token}
             onChange={(e) => setToken(e.target.value)}
             placeholder="Enter 6-digit code"
-            className="w-full max-w-xs rounded-lg border border-gray-700 bg-gray-800 p-3 text-center text-lg tracking-widest text-white outline-none focus:border-indigo-500"
+            className="w-full max-w-xs rounded-lg border border-hairline bg-surface-raised p-3 text-center text-lg tracking-widest text-foreground outline-none transition-colors duration-300 ease-out focus:border-accent"
           />
           <button
             type="submit"
             disabled={busy || token.length !== 6}
-            className="rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+            className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-background transition-colors duration-300 ease-out hover:bg-accent-hover disabled:opacity-50"
           >
             Confirm & enable
           </button>
@@ -117,7 +117,7 @@ export default function MfaSetup() {
             type="button"
             onClick={() => void startSetup()}
             disabled={busy}
-            className="rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+            className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-background transition-colors duration-300 ease-out hover:bg-accent-hover disabled:opacity-50"
           >
             Set up two-factor authentication
           </button>
@@ -130,12 +130,12 @@ export default function MfaSetup() {
               value={token}
               onChange={(e) => setToken(e.target.value)}
               placeholder="Code to disable"
-              className="w-40 rounded-lg border border-gray-700 bg-gray-800 p-2 text-sm text-white outline-none focus:border-indigo-500"
+              className="w-40 rounded-lg border border-hairline bg-surface-raised p-2 text-sm text-foreground outline-none transition-colors duration-300 ease-out focus:border-accent"
             />
             <button
               type="submit"
               disabled={busy || token.length !== 6}
-              className="rounded-full border border-red-800 bg-red-950/40 px-4 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-950/70 disabled:opacity-50"
+              className="rounded-full border border-danger/50 bg-danger/10 px-4 py-2 text-xs font-semibold text-danger transition-colors duration-300 ease-out hover:bg-danger/20 disabled:opacity-50"
             >
               Disable 2FA
             </button>

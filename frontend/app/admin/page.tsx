@@ -47,34 +47,34 @@ export default function AdminOverviewPage() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">Overview</h1>
-        <p className="mt-1 text-sm text-gray-400">A snapshot of the gallery&apos;s users and content.</p>
+        <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">Overview</h1>
+        <p className="mt-1 text-sm text-muted">A snapshot of the gallery&apos;s users and content.</p>
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-400">Loading stats...</p>
+        <p className="text-sm text-muted">Loading stats...</p>
       ) : error ? (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-danger">{error}</p>
       ) : stats ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-            <p className="text-sm text-gray-400">Total users</p>
-            <p className="mt-2 text-3xl font-bold text-white">{stats.totalUsers}</p>
+          <div className="rounded-2xl border border-hairline bg-surface p-6">
+            <p className="text-sm text-muted">Total users</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">{stats.totalUsers}</p>
           </div>
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-            <p className="text-sm text-gray-400">Verified painters</p>
-            <p className="mt-2 text-3xl font-bold text-white">{stats.totalPainters}</p>
+          <div className="rounded-2xl border border-hairline bg-surface p-6">
+            <p className="text-sm text-muted">Verified painters</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">{stats.totalPainters}</p>
           </div>
           <Link
             href="/admin/painters"
-            className="rounded-2xl border border-gray-800 bg-gray-900 p-6 transition hover:border-indigo-500/50"
+            className="rounded-2xl border border-hairline bg-surface p-6 transition-colors duration-300 ease-out hover:border-accent/50"
           >
-            <p className="text-sm text-gray-400">Pending applications</p>
-            <p className="mt-2 text-3xl font-bold text-yellow-400">{stats.pendingApplications}</p>
+            <p className="text-sm text-muted">Pending applications</p>
+            <p className="mt-2 text-3xl font-bold text-warning">{stats.pendingApplications}</p>
           </Link>
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-            <p className="text-sm text-gray-400">Total paintings</p>
-            <p className="mt-2 text-3xl font-bold text-white">{stats.totalPaintings}</p>
+          <div className="rounded-2xl border border-hairline bg-surface p-6">
+            <p className="text-sm text-muted">Total paintings</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">{stats.totalPaintings}</p>
           </div>
         </div>
       ) : null}

@@ -32,13 +32,13 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     if (this.state.hasError) {
       return (
         <main className="mx-auto flex w-full max-w-7xl flex-1 items-center justify-center px-4 py-10 sm:px-6">
-          <div className="max-w-md space-y-3 rounded-2xl border border-rose-200 bg-white p-6 text-center shadow-sm dark:border-rose-900 dark:bg-gray-900">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Something went wrong</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-300">Please refresh and try again.</p>
+          <div className="max-w-md space-y-3 rounded-2xl border border-hairline bg-surface p-6 text-center shadow-sm">
+            <h1 className="font-serif text-xl font-semibold text-foreground">Something went wrong</h1>
+            <p className="text-sm text-muted">Please refresh and try again.</p>
             <button
               type="button"
               onClick={this.handleReload}
-              className="min-h-11 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              className="min-h-11 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-background transition-colors duration-300 ease-out hover:bg-accent-hover"
             >
               Refresh
             </button>

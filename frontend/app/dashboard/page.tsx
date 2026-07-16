@@ -6,9 +6,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/components/AuthProvider';
 import { api } from '@/lib/api';
-import type { Artwork } from '@/app/lib/types';
+import type { Artwork, ArtworkPainter } from '@/app/lib/types';
+import ReactionBar from '@/components/ReactionBar';
 import CreateListingModal from './_components/CreateListingModal';
-import MfaSetup from '@/components/MfaSetup';
 
 function extractErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'response' in error) {
@@ -20,43 +20,54 @@ function extractErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Something went wrong.';
 }
 
+function painterName(painterId: Artwork['painterId']): string {
+  if (typeof painterId === 'string') return 'Independent artist';
+  const painter = painterId as ArtworkPainter;
+  return `${painter.firstName} ${painter.lastName}`;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, refreshUser } = useAuth();
-  const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [feed, setFeed] = useState<Artwork[]>([]);
+  const [myArtworks, setMyArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
 
+  const fetchFeed = useCallback(async () => {
+    try {
+      const res = await api.get('/artworks', { params: { limit: 6 } });
+      setFeed(res.data.data.items);
+    } catch {
+      setFeed([]);
+    }
+  }, []);
+
   const fetchMyPaintings = useCallback(async (painterId: string) => {
-    setLoading(true);
     try {
       const res = await api.get('/artworks', { params: { painterId } });
-      setArtworks(res.data.data.items);
+      setMyArtworks(res.data.data.items);
     } catch {
-      setArtworks([]);
-    } finally {
-      setLoading(false);
+      setMyArtworks([]);
     }
   }, []);
 
   useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
+    if (authLoading) return;
     if (!user) {
       router.push('/login');
       return;
     }
 
+    setLoading(true);
+    const tasks: Promise<void>[] = [fetchFeed()];
     if (user.role === 'VERIFIED_ARTIST') {
-      void fetchMyPaintings(user.id);
-    } else {
-      setLoading(false);
+      tasks.push(fetchMyPaintings(user.id));
     }
-  }, [authLoading, user, router, fetchMyPaintings]);
+    void Promise.all(tasks).finally(() => setLoading(false));
+  }, [authLoading, user, router, fetchFeed, fetchMyPaintings]);
 
   async function handleApplySeller() {
     setApplying(true);
@@ -73,7 +84,7 @@ export default function DashboardPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         Loading your dashboard...
       </div>
     );
@@ -84,42 +95,50 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <header className="flex flex-wrap justify-between items-center gap-4 border-b border-gray-800 pb-6">
+    <div className="min-h-screen bg-background text-foreground p-8">
+      <div className="mx-auto max-w-6xl space-y-10">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-hairline pb-6">
           <div>
-            <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-linear-to-r from-purple-400 to-indigo-500">
-              Dashboard
-            </h1>
-            <p className="text-gray-400 mt-2">
-              Welcome back, {user.firstName} ({user.role.replace('_', ' ')})
+            <h1 className="font-serif text-4xl font-semibold tracking-tight text-foreground">Dashboard</h1>
+            <p className="mt-2 text-muted">
+              Welcome back, {user.firstName}{' '}
+              <span className="text-accent">({user.role.replace('_', ' ')})</span>
             </p>
           </div>
 
-          {user.role === 'VERIFIED_ARTIST' && (
-            <button
-              onClick={() => setIsCreateOpen(true)}
-              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-lg transition-transform active:scale-95"
+          <div className="flex items-center gap-3">
+            <Link
+              href="/profile"
+              className="rounded-full border border-hairline bg-surface px-5 py-2.5 text-sm font-semibold text-foreground transition-colors duration-300 ease-out hover:border-accent hover:text-accent"
             >
-              + Post painting
-            </button>
-          )}
+              Edit profile
+            </Link>
+            {user.role === 'VERIFIED_ARTIST' && (
+              <button
+                onClick={() => setIsCreateOpen(true)}
+                className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-background shadow-lg transition-all duration-300 ease-out hover:bg-accent-hover active:scale-95"
+              >
+                + Post painting
+              </button>
+            )}
+          </div>
         </header>
 
+        {/* Role-specific callouts */}
         {user.role === 'USER' && (
-          <section className="rounded-2xl border border-gray-800 bg-gray-900 p-6 space-y-3">
-            <h2 className="text-lg font-bold text-white">Become a painter</h2>
-            <p className="text-sm text-gray-400">
+          <section className="space-y-3 rounded-2xl border border-hairline bg-surface p-6">
+            <h2 className="font-serif text-lg font-semibold text-foreground">Become a painter</h2>
+            <p className="text-sm text-muted">
               Apply to become a verified artist so you can post your own paintings to the gallery.
             </p>
 
             {user.sellerStatus === 'none' && (
               <div className="space-y-2">
-                {applyError ? <p className="text-sm text-red-400">{applyError}</p> : null}
+                {applyError ? <p className="text-sm text-danger">{applyError}</p> : null}
                 <button
                   onClick={() => void handleApplySeller()}
                   disabled={applying}
-                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-lg transition-transform active:scale-95 disabled:opacity-50"
+                  className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-background shadow-lg transition-all duration-300 ease-out hover:bg-accent-hover active:scale-95 disabled:opacity-50"
                 >
                   {applying ? 'Submitting...' : 'Apply to become a painter'}
                 </button>
@@ -127,46 +146,64 @@ export default function DashboardPage() {
             )}
 
             {user.sellerStatus === 'pending' && (
-              <span className="inline-block px-4 py-2 rounded-lg bg-yellow-900/40 text-yellow-300 text-sm font-medium">
+              <span className="inline-block rounded-lg bg-warning/15 px-4 py-2 text-sm font-medium text-warning">
                 Your painter application is pending review.
               </span>
             )}
 
             {user.sellerStatus === 'rejected' && (
-              <span className="inline-block px-4 py-2 rounded-lg bg-red-900/40 text-red-300 text-sm font-medium">
+              <span className="inline-block rounded-lg bg-danger/15 px-4 py-2 text-sm font-medium text-danger">
                 Your painter application was rejected.
               </span>
             )}
           </section>
         )}
 
+        {user.role === 'ADMIN' && (
+          <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-accent/30 bg-accent-soft p-6">
+            <div>
+              <h2 className="font-serif text-lg font-semibold text-foreground">Admin console</h2>
+              <p className="mt-1 text-sm text-muted">
+                Review painter applications, manage users, and see gallery stats.
+              </p>
+            </div>
+            <Link
+              href="/admin"
+              className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-background shadow-lg transition-colors duration-300 ease-out hover:bg-accent-hover"
+            >
+              Open admin console
+            </Link>
+          </section>
+        )}
+
+        {/* Artist's own paintings */}
         {user.role === 'VERIFIED_ARTIST' && (
           <section className="space-y-4">
-            <h2 className="text-lg font-bold text-white">Your paintings</h2>
-            {artworks.length === 0 ? (
-              <p className="text-center text-gray-500 py-12">
+            <h2 className="font-serif text-xl font-semibold text-foreground">Your paintings</h2>
+            {myArtworks.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-hairline bg-surface/40 py-12 text-center text-muted">
                 You haven&apos;t posted any paintings yet.
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {artworks.map((art) => (
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {myArtworks.map((art) => (
                   <Link
                     key={art.id}
                     href={`/paintings/${art.id}`}
-                    className="bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 hover:border-indigo-500/50 transition-colors group block"
+                    className="group block overflow-hidden rounded-2xl border border-hairline bg-surface transition-colors duration-300 ease-out hover:border-accent/60"
                   >
-                    <div className="relative aspect-square bg-gray-800 overflow-hidden">
+                    <div className="relative aspect-square overflow-hidden bg-surface-raised">
                       <Image
                         src={art.imageUrl}
                         alt={art.title}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                       />
                     </div>
-                    <div className="p-6 space-y-2">
+                    <div className="space-y-2 p-6">
                       <h3 className="text-xl font-bold">{art.title}</h3>
-                      <p className="text-gray-400 text-sm line-clamp-2">{art.description}</p>
+                      <p className="line-clamp-2 text-sm text-muted">{art.description}</p>
                     </div>
                   </Link>
                 ))}
@@ -175,15 +212,73 @@ export default function DashboardPage() {
           </section>
         )}
 
-        <section>
-          <MfaSetup />
+        {/* Interactive gallery feed — for every role */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-serif text-xl font-semibold text-foreground">Latest from the gallery</h2>
+            <Link
+              href="/paintings"
+              className="text-sm font-semibold text-muted transition-colors duration-300 ease-out hover:text-accent"
+            >
+              Browse all →
+            </Link>
+          </div>
+
+          {feed.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-hairline bg-surface/40 py-12 text-center text-muted">
+              No paintings in the gallery yet.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {feed.map((art) => (
+                <div
+                  key={art.id}
+                  className="flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface"
+                >
+                  <Link href={`/paintings/${art.id}`} className="group block">
+                    <div className="relative aspect-square overflow-hidden bg-surface-raised">
+                      <Image
+                        src={art.imageUrl}
+                        alt={art.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                      />
+                    </div>
+                  </Link>
+                  <div className="flex flex-1 flex-col gap-3 p-5">
+                    <div>
+                      <Link href={`/paintings/${art.id}`}>
+                        <h3 className="truncate text-lg font-semibold text-foreground transition-colors duration-300 ease-out hover:text-accent">
+                          {art.title}
+                        </h3>
+                      </Link>
+                      <p className="truncate text-xs text-muted">by {painterName(art.painterId)}</p>
+                    </div>
+                    <div className="mt-auto">
+                      <ReactionBar artworkId={art.id} />
+                      <Link
+                        href={`/paintings/${art.id}`}
+                        className="mt-3 inline-block text-xs font-semibold text-muted transition-colors duration-300 ease-out hover:text-accent"
+                      >
+                        View & comment →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
       <CreateListingModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onCreated={() => user.role === 'VERIFIED_ARTIST' && void fetchMyPaintings(user.id)}
+        onCreated={() => {
+          void fetchFeed();
+          if (user.role === 'VERIFIED_ARTIST') void fetchMyPaintings(user.id);
+        }}
       />
     </div>
   );

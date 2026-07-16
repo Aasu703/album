@@ -47,21 +47,21 @@ export default async function PaintingDetailPage({
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 lg:flex-row">
-      <div className="relative aspect-square w-full flex-1 overflow-hidden rounded-3xl bg-gray-900 lg:max-w-xl">
+      <div className="relative aspect-square w-full flex-1 overflow-hidden rounded-3xl bg-surface lg:max-w-xl">
         <Image src={artwork.imageUrl} alt={artwork.title} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
       </div>
 
       <div className="flex flex-1 flex-col gap-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">{artwork.title}</h1>
-          <p className="mt-1 text-sm text-gray-400">by {painterName(artwork.painterId)}</p>
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">{artwork.title}</h1>
+          <p className="mt-1 text-sm text-muted">by {painterName(artwork.painterId)}</p>
         </div>
 
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">{artwork.description}</p>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/80">{artwork.description}</p>
 
         <ReactionBar artworkId={artwork.id} initialSummary={reactionSummary} />
 
-        <div className="border-t border-gray-800 pt-6">
+        <div className="border-t border-hairline pt-6">
           <CommentSection artworkId={artwork.id} />
         </div>
       </div>

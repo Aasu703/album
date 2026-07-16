@@ -29,13 +29,13 @@ export default function ConfirmModal({
   }
 
   return (
-    <div className="fixed inset-0 z-90 flex items-center justify-center bg-black/50 px-4 py-6">
-      <div className="w-full max-w-md rounded-3xl border border-[#E9ECEF] bg-white p-5 shadow-xl">
-        <h2 className="text-lg font-bold text-[#1A1A2E]">{title}</h2>
-        <p className="mt-2 text-sm text-[#6C757D]">{description}</p>
+    <div className="fixed inset-0 z-90 flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-3xl border border-hairline bg-surface p-5 shadow-xl">
+        <h2 className="font-serif text-lg font-semibold text-foreground">{title}</h2>
+        <p className="mt-2 text-sm text-muted">{description}</p>
 
         {warning ? (
-          <p className="mt-3 rounded-2xl border border-[#FFC93C]/40 bg-[#FFC93C]/20 p-3 text-sm text-[#8a6a14]">{warning}</p>
+          <p className="mt-3 rounded-2xl border border-warning/40 bg-warning/15 p-3 text-sm text-warning">{warning}</p>
         ) : null}
 
         <div className="mt-5 flex items-center justify-end gap-2">
@@ -43,7 +43,7 @@ export default function ConfirmModal({
             type="button"
             onClick={onCancel}
             disabled={isBusy}
-            className="min-h-11 rounded-full border border-[#E9ECEF] bg-white px-4 py-2 text-sm font-semibold text-[#1A1A2E] transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-11 rounded-full border border-hairline bg-surface-raised px-4 py-2 text-sm font-semibold text-foreground transition-colors duration-300 ease-out hover:border-accent/60 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {cancelLabel}
           </button>
@@ -51,7 +51,7 @@ export default function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={isBusy}
-            className="min-h-11 rounded-full bg-[#FF6B6B] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:shadow-md hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-11 rounded-full bg-danger px-4 py-2 text-sm font-semibold text-background shadow-sm transition-colors duration-300 ease-out hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isBusy ? "Working..." : confirmLabel}
           </button>

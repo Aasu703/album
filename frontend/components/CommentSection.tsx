@@ -80,7 +80,7 @@ export default function CommentSection({ artworkId }: CommentSectionProps) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400">Comments</h2>
+      <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Comments</h2>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <textarea
@@ -90,22 +90,22 @@ export default function CommentSection({ artworkId }: CommentSectionProps) {
           rows={2}
           placeholder={user ? "Share your thoughts..." : "Log in to comment"}
           disabled={!user}
-          className="w-full rounded-xl border border-gray-700 bg-gray-900 p-3 text-sm text-gray-100 outline-none focus:border-indigo-500 disabled:opacity-50"
+          className="w-full rounded-xl border border-hairline bg-surface p-3 text-sm text-foreground outline-none transition-colors duration-300 ease-out focus:border-accent disabled:opacity-50"
         />
-        {error ? <p className="text-sm text-red-400">{error}</p> : null}
+        {error ? <p className="text-sm text-danger">{error}</p> : null}
         <button
           type="submit"
           disabled={submitting || !text.trim()}
-          className="self-end rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+          className="self-end rounded-full bg-accent px-4 py-2 text-sm font-semibold text-background transition-colors duration-300 ease-out hover:bg-accent-hover disabled:opacity-50"
         >
           {submitting ? "Posting..." : "Post comment"}
         </button>
       </form>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading comments...</p>
+        <p className="text-sm text-muted">Loading comments...</p>
       ) : comments.length === 0 ? (
-        <p className="text-sm text-gray-500">No comments yet. Be the first to say something.</p>
+        <p className="text-sm text-muted">No comments yet. Be the first to say something.</p>
       ) : (
         <ul className="space-y-3">
           {comments.map((comment) => {
@@ -114,21 +114,21 @@ export default function CommentSection({ artworkId }: CommentSectionProps) {
               (user.role === "ADMIN" ||
                 (typeof comment.authorId === "object" && comment.authorId.id === user.id));
             return (
-              <li key={comment.id} className="rounded-xl border border-gray-800 bg-gray-900/60 p-3">
+              <li key={comment.id} className="rounded-xl border border-hairline bg-surface/60 p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-white">{authorName(comment.authorId)}</p>
+                  <p className="text-sm font-semibold text-foreground">{authorName(comment.authorId)}</p>
                   {canDelete ? (
                     <button
                       type="button"
                       onClick={() => void handleDelete(comment.id)}
-                      className="text-xs font-semibold text-gray-500 hover:text-red-400"
+                      className="text-xs font-semibold text-muted transition-colors duration-300 ease-out hover:text-danger"
                     >
                       Delete
                     </button>
                   ) : null}
                 </div>
                 {/* Rendered as plain text content, not HTML, so no stored payload can execute. */}
-                <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-300">{comment.text}</p>
+                <p className="mt-1 whitespace-pre-wrap break-words text-sm text-foreground/80">{comment.text}</p>
               </li>
             );
           })}

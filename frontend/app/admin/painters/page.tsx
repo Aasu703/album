@@ -66,22 +66,22 @@ export default function AdminPaintersPage() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">Painter applications</h1>
-        <p className="mt-1 text-sm text-gray-400">Approve or reject users who applied to become verified painters.</p>
+        <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">Painter applications</h1>
+        <p className="mt-1 text-sm text-muted">Approve or reject users who applied to become verified painters.</p>
       </div>
 
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
 
       {loading ? (
-        <p className="text-sm text-gray-400">Loading applications...</p>
+        <p className="text-sm text-muted">Loading applications...</p>
       ) : applicants.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-gray-800 bg-gray-900/50 p-10 text-center text-sm text-gray-400">
+        <p className="rounded-2xl border border-dashed border-hairline bg-surface/50 p-10 text-center text-sm text-muted">
           No pending applications.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-gray-800">
+        <div className="overflow-x-auto rounded-2xl border border-hairline">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-900 text-gray-400">
+            <thead className="bg-surface text-muted">
               <tr>
                 <th className="px-4 py-3 font-semibold">Name</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
@@ -89,14 +89,14 @@ export default function AdminPaintersPage() {
                 <th className="px-4 py-3 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800 bg-gray-950">
+            <tbody className="divide-y divide-hairline bg-background">
               {applicants.map((applicant) => (
                 <tr key={applicant.id}>
-                  <td className="px-4 py-3 text-white">
+                  <td className="px-4 py-3 text-foreground">
                     {applicant.firstName} {applicant.lastName}
                   </td>
-                  <td className="px-4 py-3 text-gray-400">{applicant.email}</td>
-                  <td className="px-4 py-3 text-gray-400">
+                  <td className="px-4 py-3 text-muted">{applicant.email}</td>
+                  <td className="px-4 py-3 text-muted">
                     {new Date(applicant.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-right space-x-2">
@@ -104,7 +104,7 @@ export default function AdminPaintersPage() {
                       type="button"
                       onClick={() => void handleApprove(applicant.id)}
                       disabled={busyId === applicant.id}
-                      className="rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+                      className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-background transition-colors duration-300 ease-out hover:bg-accent-hover disabled:opacity-50"
                     >
                       Approve
                     </button>
@@ -112,7 +112,7 @@ export default function AdminPaintersPage() {
                       type="button"
                       onClick={() => void handleReject(applicant.id)}
                       disabled={busyId === applicant.id}
-                      className="rounded-full border border-red-800 bg-red-950/40 px-4 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-950/70 disabled:opacity-50"
+                      className="rounded-full border border-danger/50 bg-danger/10 px-4 py-1.5 text-xs font-semibold text-danger transition-colors duration-300 ease-out hover:bg-danger/20 disabled:opacity-50"
                     >
                       Reject
                     </button>

@@ -59,10 +59,10 @@ export default function ReactionBar({ artworkId, initialSummary }: ReactionBarPr
             type="button"
             onClick={() => void handleReact(emoji)}
             disabled={busyEmoji === emoji}
-            className={`flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
+            className={`flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors duration-300 ease-out ${
               isMine
-                ? "border-indigo-500 bg-indigo-500/20 text-indigo-300"
-                : "border-gray-700 bg-gray-900 text-gray-300 hover:border-indigo-500/60 hover:text-indigo-300"
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-hairline bg-surface text-foreground/80 hover:border-accent/60 hover:text-accent"
             } ${isMine ? "reaction-bounce" : ""}`}
           >
             <span aria-hidden="true">{emoji}</span>

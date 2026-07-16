@@ -27,14 +27,11 @@ export class UserSchemaClass {
   @Prop({ enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' })
   sellerStatus: SellerStatus;
 
-  @Prop()
-  stripeConnectAccountId?: string;
-
-  @Prop()
-  stripeCustomerId?: string;
-
   @Prop({ default: false })
-  stripeChargesEnabled: boolean;
+  isBanned: boolean;
+
+  @Prop()
+  bannedReason?: string;
 
   createdAt?: Date;
 
@@ -52,6 +49,9 @@ export class UserSchemaClass {
 }
 
 export const UserMongooseSchema = SchemaFactory.createForClass(UserSchemaClass);
+
+UserMongooseSchema.index({ role: 1 });
+UserMongooseSchema.index({ sellerStatus: 1 });
 
 UserMongooseSchema.set('toJSON', {
   virtuals: true,

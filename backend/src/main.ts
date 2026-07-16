@@ -1,10 +1,16 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
+
+  // Security headers: HSTS, X-Content-Type-Options: nosniff, frame-ancestors/X-Frame-Options
+  // (clickjacking), Referrer-Policy, cross-origin isolation, and a restrictive default CSP.
+  app.use(helmet());
+
   app.use(cookieParser());
 
   app.setGlobalPrefix('api');

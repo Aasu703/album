@@ -18,7 +18,6 @@ import { CurrentUser } from '../../users/presentation/decorators/current-user.de
 import { JwtAuthGuard, AuthenticatedRequest } from '../../users/presentation/guards/jwt-auth.guard';
 import { RolesGuard } from '../../users/presentation/guards/roles.guard';
 import { ArtworksService } from '../application/artworks.service';
-import { BidDto } from './dto/bid.dto';
 import { CreateArtworkDto } from './dto/create-artwork.dto';
 import { QueryArtworksDto } from './dto/query-artworks.dto';
 import { UpdateArtworkDto } from './dto/update-artwork.dto';
@@ -30,22 +29,21 @@ const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp
 export class ArtworksController {
   constructor(private readonly artworksService: ArtworksService) {}
 
-  // Public: browse listings with optional filters.
+  // Public: browse the gallery with optional search/filter.
   @Get()
   async findAll(@Query() query: QueryArtworksDto) {
     const result = await this.artworksService.findAll(query);
     return { success: true, data: result };
   }
 
-  // Public: view a single listing.
+  // Public: view a single painting.
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const artwork = await this.artworksService.findOne(id);
     return { success: true, data: { artwork } };
   }
 
-  // Task 4: Artwork Creation Endpoint
-  // Security Check: Only a VERIFIED_ARTIST can list an artwork. The RolesGuard enforces this
+  // Security Check: Only a VERIFIED_ARTIST can post a painting. The RolesGuard enforces this
   // by parsing the cryptographically signed JWT.
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -89,18 +87,5 @@ export class ArtworksController {
   async remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedRequest['user']) {
     await this.artworksService.remove(id, user.sub, user.role === 'ADMIN');
     return { success: true };
-  }
-
-  // Task 1: Bidding endpoint
-  @Post(':id/bid')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('USER')
-  async placeBid(
-    @Param('id') id: string,
-    @Body() dto: BidDto,
-    @CurrentUser() user: AuthenticatedRequest['user'],
-  ) {
-    const updatedArtwork = await this.artworksService.placeBid(id, user.sub, dto.amount);
-    return { success: true, data: { artwork: updatedArtwork } };
   }
 }

@@ -11,12 +11,11 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { JwtSignOptions } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { User } from '../domain/user.entity';
+import { User, UserRole } from '../domain/user.entity';
 import { USER_REPOSITORY } from '../domain/user.repository';
 import type { UserRepository } from '../domain/user.repository';
 import { LoginDto } from '../presentation/dto/login.dto';
 import { RegisterDto } from '../presentation/dto/register.dto';
-import { StripeService } from '../../stripe/stripe.service';
 
 export interface AuthTokens {
   accessToken: string;
@@ -31,7 +30,9 @@ export interface PublicUser {
   phone: string | null;
   role: string;
   sellerStatus: string;
-  stripeChargesEnabled: boolean;
+  isBanned: boolean;
+  isMfaEnabled: boolean;
+  createdAt: Date;
 }
 
 function toPublicUser(user: User): PublicUser {
@@ -43,9 +44,14 @@ function toPublicUser(user: User): PublicUser {
     phone: user.phone ?? null,
     role: user.role,
     sellerStatus: user.sellerStatus,
-    stripeChargesEnabled: user.stripeChargesEnabled ?? false,
+    isBanned: user.isBanned,
+    isMfaEnabled: user.isMfaEnabled ?? false,
+    createdAt: user.createdAt,
   };
 }
+
+const MAX_FAILED_LOGIN_ATTEMPTS = 10;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -53,7 +59,6 @@ export class AuthService {
     @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly stripeService: StripeService,
   ) {}
 
   private signTokens(user: User): AuthTokens {
@@ -61,12 +66,12 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_ACCESS_TTL') ?? '15m',
+      expiresIn: this.configService.get<string>('JWT_ACCESS_TTL') ?? '15d',
     } as JwtSignOptions);
 
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_REFRESH_TTL') ?? '7d',
+      expiresIn: this.configService.get<string>('JWT_REFRESH_TTL') ?? '30d',
     } as JwtSignOptions);
 
     return { accessToken, refreshToken };
@@ -82,7 +87,7 @@ export class AuthService {
       throw new ConflictException('An account with this email already exists.');
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const passwordHash = await bcrypt.hash(dto.password, 12);
 
     const user = await this.userRepository.create({
       email: dto.email.toLowerCase().trim(),
@@ -98,7 +103,14 @@ export class AuthService {
   async login(dto: LoginDto): Promise<{ user: PublicUser } & AuthTokens> {
     const user = await this.userRepository.findByEmail(dto.email);
     if (!user) {
+      // Security: run a dummy bcrypt compare so login timing doesn't reveal whether
+      // an email exists in the system (a basic user-enumeration mitigation).
+      await bcrypt.compare(dto.password, '$2b$12$invalidsaltinvalidsaltinvalidsaltinva');
       throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    if (user.isBanned) {
+      throw new ForbiddenException('This account has been suspended. Contact support for help.');
     }
 
     if (user.lockoutUntil && user.lockoutUntil > new Date()) {
@@ -109,8 +121,8 @@ export class AuthService {
     if (!passwordMatches) {
       const failedAttempts = (user.failedLoginAttempts || 0) + 1;
       let lockoutUntil = user.lockoutUntil;
-      if (failedAttempts >= 10) {
-        lockoutUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+      if (failedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+        lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
       }
       await this.userRepository.update(user.id, { failedLoginAttempts: failedAttempts, lockoutUntil });
       throw new UnauthorizedException('Invalid email or password.');
@@ -142,7 +154,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('User not found.');
 
     const secret = authenticator.generateSecret();
-    const otpauthUrl = authenticator.keyuri(user.email, 'FreeAlbumApp', secret);
+    const otpauthUrl = authenticator.keyuri(user.email, 'PaintingGallery', secret);
 
     await this.userRepository.update(user.id, { mfaSecret: secret });
 
@@ -161,6 +173,18 @@ export class AuthService {
     throw new BadRequestException('Invalid MFA token.');
   }
 
+  async disableMfa(userId: string, token: string): Promise<boolean> {
+    const user = await this.userRepository.findById(userId);
+    if (!user || !user.mfaSecret) throw new BadRequestException('MFA is not enabled.');
+
+    const isValid = authenticator.verify({ token, secret: user.mfaSecret });
+    if (!isValid) {
+      throw new BadRequestException('Invalid MFA token.');
+    }
+    await this.userRepository.update(user.id, { isMfaEnabled: false, mfaSecret: null });
+    return true;
+  }
+
   async refresh(refreshToken: string): Promise<AuthTokens> {
     let payload: { sub: string };
     try {
@@ -175,11 +199,14 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Invalid or expired refresh token.');
     }
+    if (user.isBanned) {
+      throw new ForbiddenException('This account has been suspended.');
+    }
 
     return this.signTokens(user);
   }
 
-  /** Self-service: a buyer applies to become a seller. */
+  /** Self-service: a buyer applies to become a seller (painter). */
   async applySeller(userId: string): Promise<PublicUser> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
@@ -187,12 +214,12 @@ export class AuthService {
     }
 
     if (user.sellerStatus === 'pending' || user.sellerStatus === 'approved') {
-      throw new BadRequestException(`Seller application is already ${user.sellerStatus}.`);
+      throw new BadRequestException(`Painter application is already ${user.sellerStatus}.`);
     }
 
     const updated = await this.userRepository.update(user.id, { sellerStatus: 'pending' });
     if (!updated) {
-      throw new BadRequestException('Failed to submit seller application.');
+      throw new BadRequestException('Failed to submit painter application.');
     }
     return toPublicUser(updated);
   }
@@ -202,32 +229,21 @@ export class AuthService {
     return users.map(toPublicUser);
   }
 
-  /** Admin approves a pending seller: upgrades role, creates a Stripe Connect account, and returns an onboarding link. */
-  async approveSeller(userId: string, frontendOrigin: string): Promise<{ user: PublicUser; onboardingUrl: string }> {
+  /** Admin approves a pending painter application, upgrading their role. */
+  async approveSeller(userId: string): Promise<PublicUser> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new UnauthorizedException('User not found.');
     }
 
-    const stripeConnectAccountId =
-      user.stripeConnectAccountId ?? (await this.stripeService.createExpressAccount(user.email));
-
     const updated = await this.userRepository.update(user.id, {
       role: 'VERIFIED_ARTIST',
       sellerStatus: 'approved',
-      stripeConnectAccountId,
     });
     if (!updated) {
-      throw new BadRequestException('Failed to approve seller.');
+      throw new BadRequestException('Failed to approve painter.');
     }
-
-    const onboardingUrl = await this.stripeService.createOnboardingLink(
-      stripeConnectAccountId,
-      `${frontendOrigin}/dashboard?stripe=refresh`,
-      `${frontendOrigin}/dashboard?stripe=return`,
-    );
-
-    return { user: toPublicUser(updated), onboardingUrl };
+    return toPublicUser(updated);
   }
 
   async rejectSeller(userId: string): Promise<PublicUser> {
@@ -238,31 +254,9 @@ export class AuthService {
 
     const updated = await this.userRepository.update(user.id, { sellerStatus: 'rejected' });
     if (!updated) {
-      throw new BadRequestException('Failed to reject seller application.');
+      throw new BadRequestException('Failed to reject painter application.');
     }
     return toPublicUser(updated);
-  }
-
-  /** Regenerates a fresh onboarding link for a seller who hasn't finished Stripe onboarding yet. */
-  async createOnboardingLink(userId: string, frontendOrigin: string): Promise<string> {
-    const user = await this.userRepository.findById(userId);
-    if (!user?.stripeConnectAccountId) {
-      throw new BadRequestException('No Stripe Connect account found for this user.');
-    }
-
-    return this.stripeService.createOnboardingLink(
-      user.stripeConnectAccountId,
-      `${frontendOrigin}/dashboard?stripe=refresh`,
-      `${frontendOrigin}/dashboard?stripe=return`,
-    );
-  }
-
-  /** Marks a connected account's charge capability once Stripe confirms via webhook. */
-  async setStripeChargesEnabled(stripeConnectAccountId: string, enabled: boolean): Promise<void> {
-    const user = await this.userRepository.findByStripeAccountId(stripeConnectAccountId);
-    if (user) {
-      await this.userRepository.update(user.id, { stripeChargesEnabled: enabled });
-    }
   }
 
   async me(userId: string): Promise<PublicUser> {
@@ -271,5 +265,48 @@ export class AuthService {
       throw new UnauthorizedException('User not found.');
     }
     return toPublicUser(user);
+  }
+
+  // ---- Admin: user & painter management ----
+
+  async listUsers(role?: UserRole): Promise<PublicUser[]> {
+    const users = await this.userRepository.findAll(role ? { role } : undefined);
+    return users.map(toPublicUser);
+  }
+
+  async banUser(adminId: string, userId: string, reason?: string): Promise<PublicUser> {
+    if (adminId === userId) {
+      throw new BadRequestException('Admins cannot ban their own account.');
+    }
+    const target = await this.userRepository.findById(userId);
+    if (!target) {
+      throw new UnauthorizedException('User not found.');
+    }
+    if (target.role === 'ADMIN') {
+      throw new ForbiddenException('Admin accounts cannot be banned.');
+    }
+    const updated = await this.userRepository.update(userId, {
+      isBanned: true,
+      bannedReason: reason?.trim() || 'Violation of community guidelines.',
+    });
+    if (!updated) {
+      throw new BadRequestException('Failed to ban user.');
+    }
+    return toPublicUser(updated);
+  }
+
+  async unbanUser(userId: string): Promise<PublicUser> {
+    const target = await this.userRepository.findById(userId);
+    if (!target) {
+      throw new UnauthorizedException('User not found.');
+    }
+    const updated = await this.userRepository.update(userId, {
+      isBanned: false,
+      bannedReason: null,
+    });
+    if (!updated) {
+      throw new BadRequestException('Failed to unban user.');
+    }
+    return toPublicUser(updated);
   }
 }

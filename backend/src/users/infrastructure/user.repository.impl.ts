@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { NewUser, SellerStatus, User } from '../domain/user.entity';
+import { NewUser, SellerStatus, User, UserRole } from '../domain/user.entity';
 import { UserRepository } from '../domain/user.repository';
 import { UserDocument, UserSchemaClass } from './user.schema';
 
@@ -15,9 +15,8 @@ function toDomain(doc: UserDocument): User {
     phone: doc.phone ?? null,
     role: doc.role,
     sellerStatus: doc.sellerStatus,
-    stripeConnectAccountId: doc.stripeConnectAccountId ?? null,
-    stripeCustomerId: doc.stripeCustomerId ?? null,
-    stripeChargesEnabled: doc.stripeChargesEnabled ?? false,
+    isBanned: doc.isBanned ?? false,
+    bannedReason: doc.bannedReason ?? null,
     createdAt: doc.createdAt ?? new Date(),
     failedLoginAttempts: doc.failedLoginAttempts ?? 0,
     lockoutUntil: doc.lockoutUntil ?? null,
@@ -59,9 +58,12 @@ export class UserRepositoryImpl implements UserRepository {
     return docs.map(toDomain);
   }
 
-  async findByStripeAccountId(stripeConnectAccountId: string): Promise<User | null> {
-    const doc = await this.userModel.findOne({ stripeConnectAccountId });
-    return doc ? toDomain(doc) : null;
+  async findAll(filter?: { role?: UserRole; isBanned?: boolean }): Promise<User[]> {
+    const query: Record<string, unknown> = {};
+    if (filter?.role) query.role = filter.role;
+    if (filter?.isBanned !== undefined) query.isBanned = filter.isBanned;
+    const docs = await this.userModel.find(query).sort({ createdAt: -1 });
+    return docs.map(toDomain);
   }
 
   async update(id: string, data: Partial<User>): Promise<User | null> {

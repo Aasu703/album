@@ -1,20 +1,15 @@
-import { Type } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateArtworkDto {
   @IsString()
   @IsNotEmpty()
   @IsOptional()
+  @MaxLength(140)
   title?: string;
 
   @IsString()
   @IsNotEmpty()
   @IsOptional()
+  @MaxLength(4000)
   description?: string;
-
-  @Type(() => Number)
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  price?: number;
 }

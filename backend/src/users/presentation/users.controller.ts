@@ -1,15 +1,12 @@
-import { Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
-import type { Request } from 'express';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthService } from '../application/auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Roles } from './decorators/roles.decorator';
 import { AuthenticatedRequest } from './guards/jwt-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
-
-function frontendOrigin(req: Request): string {
-  return process.env.FRONTEND_ORIGIN ?? `${req.protocol}://${req.get('host')}`;
-}
+import { BanUserDto } from './dto/ban-user.dto';
+import { ListUsersQueryDto } from './dto/list-users-query.dto';
 
 @Controller('users')
 // Apply guards globally to the controller for defense-in-depth
@@ -17,21 +14,14 @@ function frontendOrigin(req: Request): string {
 export class UsersController {
   constructor(private readonly authService: AuthService) {}
 
-  // Self-service: any authenticated buyer can apply to become a seller.
+  // Self-service: any authenticated buyer can apply to become a painter.
   @Post('apply-seller')
   async applySeller(@CurrentUser() user: AuthenticatedRequest['user']) {
     const updated = await this.authService.applySeller(user.sub);
     return { success: true, data: { user: updated } };
   }
 
-  // Self-service: a seller can request a fresh onboarding link if theirs expired.
-  @Get('onboarding-link')
-  async onboardingLink(@CurrentUser() user: AuthenticatedRequest['user'], @Req() req: Request) {
-    const onboardingUrl = await this.authService.createOnboardingLink(user.sub, frontendOrigin(req));
-    return { success: true, data: { onboardingUrl } };
-  }
-
-  // Admin: list sellers awaiting approval.
+  // Admin: list painter applications awaiting approval.
   @Get('pending-sellers')
   @Roles('ADMIN')
   async pendingSellers() {
@@ -39,13 +29,13 @@ export class UsersController {
     return { success: true, data: { users } };
   }
 
-  // Security Check: Only an ADMIN can approve or reject sellers. The RolesGuard strictly
+  // Security Check: Only an ADMIN can approve or reject painters. The RolesGuard strictly
   // enforces this by verifying the 'role' field in the cryptographically signed JWT.
   @Patch(':id/approve-seller')
   @Roles('ADMIN')
-  async approveSeller(@Param('id') id: string, @Req() req: Request) {
-    const result = await this.authService.approveSeller(id, frontendOrigin(req));
-    return { success: true, data: result };
+  async approveSeller(@Param('id') id: string) {
+    const user = await this.authService.approveSeller(id);
+    return { success: true, data: { user } };
   }
 
   @Patch(':id/reject-seller')
@@ -53,5 +43,32 @@ export class UsersController {
   async rejectSeller(@Param('id') id: string) {
     const updatedUser = await this.authService.rejectSeller(id);
     return { success: true, data: { user: updatedUser } };
+  }
+
+  // ---- Admin: user & painter management ----
+
+  @Get()
+  @Roles('ADMIN')
+  async listUsers(@Query() query: ListUsersQueryDto) {
+    const users = await this.authService.listUsers(query.role);
+    return { success: true, data: { users } };
+  }
+
+  @Patch(':id/ban')
+  @Roles('ADMIN')
+  async banUser(
+    @Param('id') id: string,
+    @Body() dto: BanUserDto,
+    @CurrentUser() admin: AuthenticatedRequest['user'],
+  ) {
+    const user = await this.authService.banUser(admin.sub, id, dto.reason);
+    return { success: true, data: { user } };
+  }
+
+  @Patch(':id/unban')
+  @Roles('ADMIN')
+  async unbanUser(@Param('id') id: string) {
+    const user = await this.authService.unbanUser(id);
+    return { success: true, data: { user } };
   }
 }

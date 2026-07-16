@@ -10,9 +10,8 @@ export interface User {
   phone?: string | null;
   role: UserRole;
   sellerStatus: SellerStatus;
-  stripeConnectAccountId?: string | null;
-  stripeCustomerId?: string | null;
-  stripeChargesEnabled?: boolean;
+  isBanned: boolean;
+  bannedReason?: string | null;
   createdAt: Date;
   failedLoginAttempts?: number;
   lockoutUntil?: Date | null;
@@ -26,9 +25,8 @@ export type NewUser = Omit<
   | 'createdAt'
   | 'role'
   | 'sellerStatus'
-  | 'stripeConnectAccountId'
-  | 'stripeCustomerId'
-  | 'stripeChargesEnabled'
+  | 'isBanned'
+  | 'bannedReason'
   | 'failedLoginAttempts'
   | 'lockoutUntil'
   | 'isMfaEnabled'

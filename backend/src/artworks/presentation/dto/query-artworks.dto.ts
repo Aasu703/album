@@ -1,23 +1,15 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsNumber, IsOptional, Min } from 'class-validator';
-import type { ListingType } from '../../domain/artwork.entity';
+import { IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class QueryArtworksDto {
-  @IsEnum(['SOCIAL_ONLY', 'FOR_SALE', 'AUCTION'])
+  @IsString()
   @IsOptional()
-  listingType?: ListingType;
+  @MaxLength(140)
+  search?: string;
 
-  @Type(() => Number)
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  @Min(0)
-  minPrice?: number;
-
-  @Type(() => Number)
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  maxPrice?: number;
+  painterId?: string;
 
   @Type(() => Number)
   @IsInt()

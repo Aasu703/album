@@ -43,8 +43,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-xl shadow-2xl border border-gray-700">
+    <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-100 p-4">
+      <div className="w-full max-w-md p-8 space-y-6 bg-gray-900 rounded-xl shadow-2xl border border-gray-800">
         <h1 className="text-3xl font-bold text-center text-white">Sign In</h1>
         
         {error && (
@@ -62,7 +62,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                  className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
                   required
                 />
               </div>
@@ -73,7 +73,7 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none pr-12"
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none pr-12"
                     required
                   />
                   <button
@@ -104,7 +104,7 @@ export default function LoginPage() {
                 value={mfaToken}
                 onChange={(e) => setMfaToken(e.target.value)}
                 placeholder="000000"
-                className="w-full p-3 text-center text-2xl tracking-[0.5em] bg-gray-900 border border-indigo-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full p-3 text-center text-2xl tracking-[0.5em] bg-gray-800 border border-indigo-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                 required
               />
             </div>
@@ -120,7 +120,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-sm text-gray-400 mt-4">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <button type="button" onClick={() => router.push('/register')} className="text-indigo-400 hover:text-indigo-300 font-medium">
             Sign Up
           </button>

@@ -9,15 +9,15 @@ export interface AuthUser {
   phone: string | null;
   role: UserRole;
   sellerStatus: SellerStatus;
+  isBanned: boolean;
+  isMfaEnabled: boolean;
+  createdAt: string;
 }
 
 export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
 }
-
-export type ListingType = "SOCIAL_ONLY" | "FOR_SALE" | "AUCTION";
-export type ArtworkStatus = "AVAILABLE" | "SOLD";
 
 export interface ArtworkPainter {
   id: string;
@@ -31,17 +31,41 @@ export interface Artwork {
   description: string;
   imageUrl: string;
   painterId: string | ArtworkPainter;
-  listingType: ListingType;
-  price?: number;
-  currentHighestBid?: number;
-  bidderId?: string | ArtworkPainter;
-  auctionEndTime?: string;
-  status: ArtworkStatus;
   createdAt: string;
 }
 
 export interface ArtworkListResult {
   items: Artwork[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export const REACTION_EMOJIS = ["❤️", "🔥", "👏", "😍", "🎨"] as const;
+export type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
+
+export interface ReactionSummary {
+  counts: Record<string, number>;
+  total: number;
+  myReaction: ReactionEmoji | null;
+}
+
+export interface CommentAuthor {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface Comment {
+  id: string;
+  artworkId: string;
+  authorId: string | CommentAuthor;
+  text: string;
+  createdAt: string;
+}
+
+export interface CommentListResult {
+  items: Comment[];
   total: number;
   page: number;
   limit: number;

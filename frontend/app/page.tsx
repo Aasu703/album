@@ -3,8 +3,8 @@ import ArcCarousel from "@/components/ArcCarousel";
 import LandingScrollHandler from "@/components/LandingScrollHandler";
 
 export const metadata = {
-  title: "Painting Marketplace — Buy and sell original art",
-  description: "Discover original paintings from independent artists. Buy at a fixed price or bid in a live auction.",
+  title: "Painting Gallery — Discover original art",
+  description: "Discover original paintings from independent artists. React, comment, and follow the artists you love.",
 };
 
 const PLACEHOLDER_PHOTOS = [
@@ -81,7 +81,7 @@ export default async function Home() {
             lineHeight: 1.1,
           }}
         >
-          Original paintings,<br />bought and sold directly
+          Original paintings,<br />shared directly by the artist
         </h1>
 
         <p
@@ -93,7 +93,7 @@ export default async function Home() {
             lineHeight: 1.6,
           }}
         >
-          Browse fixed-price listings or bid in a live auction. Artists get paid directly through Stripe.
+          Browse a gallery of original paintings from independent artists. React and comment on the pieces you love.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>

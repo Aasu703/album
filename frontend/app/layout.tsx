@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Painting Marketplace",
-  description: "Buy and sell original paintings through fixed-price listings and live auctions.",
+  title: "Painting Gallery",
+  description: "Discover original paintings from independent artists. React and comment on the pieces you love.",
 };
 
 /** Provides global document shell, styles, and top navigation. */

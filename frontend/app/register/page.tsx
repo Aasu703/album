@@ -52,8 +52,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100 p-4">
-      <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-xl shadow-2xl border border-gray-700">
+    <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-100 p-4">
+      <div className="w-full max-w-md p-8 space-y-6 bg-gray-900 rounded-xl shadow-2xl border border-gray-800">
         <h1 className="text-3xl font-bold text-center text-white">Create Account</h1>
         
         {error && (
@@ -71,7 +71,7 @@ export default function RegisterPage() {
                 name="Firstname"
                 value={formData.Firstname}
                 onChange={handleChange}
-                className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 required
               />
             </div>
@@ -82,7 +82,7 @@ export default function RegisterPage() {
                 name="Lastname"
                 value={formData.Lastname}
                 onChange={handleChange}
-                className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 required
               />
             </div>
@@ -95,7 +95,7 @@ export default function RegisterPage() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
               required
             />
           </div>
@@ -107,7 +107,7 @@ export default function RegisterPage() {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
             />
           </div>
 
@@ -119,7 +119,7 @@ export default function RegisterPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none pr-12"
+                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none pr-12"
                 required
                 minLength={8}
               />
@@ -145,7 +145,7 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none pr-12"
+                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none pr-12"
                 required
                 minLength={8}
               />

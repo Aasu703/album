@@ -60,6 +60,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }
 
   useEffect(() => {
+    // Mount-time session bootstrap: read the httpOnly-cookie session from the API and
+    // reflect it into React state. This is a valid effect (syncing from an external
+    // system), and the setState runs after the async request resolves, not synchronously.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshUser().finally(() => setIsLoading(false));
   }, []);
 

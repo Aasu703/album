@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import type { ArtworkVisibility } from '../../domain/artwork.entity';
 
 export class UpdateArtworkDto {
   @IsString()
@@ -12,4 +13,8 @@ export class UpdateArtworkDto {
   @IsOptional()
   @MaxLength(4000)
   description?: string;
+
+  @IsIn(['public', 'private'])
+  @IsOptional()
+  visibility?: ArtworkVisibility;
 }

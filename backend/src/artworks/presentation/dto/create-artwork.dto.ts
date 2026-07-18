@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import type { ArtworkVisibility } from '../../domain/artwork.entity';
 
 export class CreateArtworkDto {
   @IsString()
@@ -10,4 +11,9 @@ export class CreateArtworkDto {
   @IsNotEmpty()
   @MaxLength(4000)
   description: string;
+
+  // Defaults to 'public' in the service when omitted.
+  @IsIn(['public', 'private'])
+  @IsOptional()
+  visibility?: ArtworkVisibility;
 }

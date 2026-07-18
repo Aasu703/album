@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { UserSchemaClass } from '../../users/infrastructure/user.schema';
+import type { ArtworkVisibility } from '../domain/artwork.entity';
 
 export type ArtworkDocument = HydratedDocument<ArtworkSchemaClass>;
 
@@ -20,6 +21,10 @@ export class ArtworkSchemaClass {
 
   @Prop({ type: Types.ObjectId, ref: UserSchemaClass.name, required: true, index: true })
   painterId: Types.ObjectId;
+
+  // 'public' shows in the gallery to everyone; 'private' is visible only to the owner.
+  @Prop({ enum: ['public', 'private'], default: 'public', index: true })
+  visibility: ArtworkVisibility;
 
   createdAt?: Date;
 }

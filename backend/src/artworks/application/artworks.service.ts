@@ -36,6 +36,7 @@ export class ArtworksService {
         imageUrl: uploadResult.secure_url,
         imagePublicId: uploadResult.public_id,
         painterId: new Types.ObjectId(painterId),
+        visibility: dto.visibility ?? 'public',
       });
       return created;
     } catch (error) {
@@ -46,7 +47,9 @@ export class ArtworksService {
   }
 
   async findAll(query: QueryArtworksDto) {
-    const filter: Record<string, unknown> = {};
+    // Public gallery: never expose private uploads. `$ne: 'private'` also matches legacy
+    // documents created before the visibility field existed (treated as public).
+    const filter: Record<string, unknown> = { visibility: { $ne: 'private' } };
     if (query.painterId) {
       filter.painterId = query.painterId;
     }
@@ -70,13 +73,34 @@ export class ArtworksService {
     return { items, total, page, limit };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, requesterId?: string) {
     const artwork = await this.artworkModel.findById(id).populate('painterId', PAINTER_FIELDS);
 
     if (!artwork) {
       throw new NotFoundException('Artwork not found.');
     }
+
+    // A private artwork is only visible to its owner. Everyone else gets a 404 (not a 403)
+    // so its existence isn't revealed.
+    if (artwork.visibility === 'private') {
+      const ownerId =
+        artwork.painterId instanceof Types.ObjectId
+          ? artwork.painterId.toString()
+          : String((artwork.painterId as { _id?: unknown })?._id ?? '');
+      if (!requesterId || ownerId !== requesterId) {
+        throw new NotFoundException('Artwork not found.');
+      }
+    }
+
     return artwork;
+  }
+
+  /** All of a user's own artworks (public and private), newest first. */
+  async findMine(userId: string) {
+    const items = await this.artworkModel
+      .find({ painterId: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 });
+    return { items, total: items.length };
   }
 
   async update(id: string, dto: UpdateArtworkDto, userId: string) {
@@ -93,6 +117,7 @@ export class ArtworksService {
     // blind Object.assign(artwork, dto) would wipe out unset fields like title.
     if (dto.title !== undefined) artwork.title = dto.title;
     if (dto.description !== undefined) artwork.description = dto.description;
+    if (dto.visibility !== undefined) artwork.visibility = dto.visibility;
 
     await artwork.save();
     return artwork;

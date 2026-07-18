@@ -1,53 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-type ThemeMode = "light" | "dark";
+import { MoonIcon, SunIcon } from "@heroicons/react/24/outline";
 
 const THEME_STORAGE_KEY = "album-theme";
 
-function applyTheme(mode: ThemeMode) {
-  const root = document.documentElement;
-  root.classList.toggle("dark", mode === "dark");
+/** Applies a theme by toggling the `dark` class on <html> and persisting the choice.
+ *  The same class + storage key is read by the inline boot script in layout.tsx. */
+function setTheme(mode: "light" | "dark") {
+  document.documentElement.classList.toggle("dark", mode === "dark");
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, mode);
+  } catch {
+    // Storage can be unavailable (private mode/quota); the class still applies.
+  }
 }
 
-function getInitialTheme(): ThemeMode {
-  if (typeof window === "undefined") {
-    return "light";
-  }
-
-  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (stored === "light" || stored === "dark") {
-    return stored;
-  }
-
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-/** Toggles application color theme and persists the selected mode in localStorage. */
+/** Light/dark theme switch. The icon is driven purely by the `dark:` CSS variant
+ *  (sun shown in dark mode to switch to light, moon in light mode to switch to dark),
+ *  so it needs no React state and can't cause a server/client hydration mismatch. */
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<ThemeMode>(() => getInitialTheme());
-
-  useEffect(() => {
-    applyTheme(theme);
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
-
   function handleToggle() {
-    const nextTheme: ThemeMode = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    applyTheme(nextTheme);
-    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    const isDark = document.documentElement.classList.contains("dark");
+    setTheme(isDark ? "light" : "dark");
   }
 
   return (
     <button
       type="button"
       onClick={handleToggle}
-      className="inline-flex min-h-11 items-center rounded-full border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800"
-      aria-label="Toggle theme"
+      aria-label="Toggle light and dark theme"
+      title="Toggle theme"
+      className="inline-flex min-h-10 items-center justify-center rounded-full border border-hairline bg-surface p-2 text-foreground shadow-sm transition-colors duration-300 ease-out hover:border-accent hover:text-accent"
     >
-      Theme
+      <SunIcon className="hidden h-5 w-5 dark:block" aria-hidden="true" />
+      <MoonIcon className="block h-5 w-5 dark:hidden" aria-hidden="true" />
     </button>
   );
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import Avatar from "@/components/Avatar";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/components/AuthProvider";
 import { generateAvatarColor } from "@/lib/avatar";
 
@@ -19,7 +20,8 @@ export default function Navbar() {
           <span aria-hidden="true" className="text-xl">🎨</span>
           <span className="font-serif text-lg font-semibold tracking-tight text-foreground">Painting Gallery</span>
         </Link>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
           {user ? (
             <Link href="/dashboard" className="text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:text-accent">
               {user.firstName}
@@ -61,6 +63,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {user ? (
             <div className="flex items-center gap-2">
               {user.role === "ADMIN" ? (

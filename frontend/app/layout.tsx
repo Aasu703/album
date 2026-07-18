@@ -24,6 +24,12 @@ export const metadata: Metadata = {
   description: "Discover original paintings from independent artists. React and comment on the pieces you love.",
 };
 
+// Runs before first paint to set the theme class from the saved preference (or the
+// OS setting), so there is no flash of the wrong theme. Kept tiny and dependency-free
+// because it executes synchronously ahead of hydration. `suppressHydrationWarning` on
+// <html> covers the class it adds.
+const THEME_INIT_SCRIPT = `(function(){try{var k="album-theme";var t=localStorage.getItem(k);if(t!=="light"&&t!=="dark"){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.classList.toggle("dark",t==="dark");}catch(e){}})();`;
+
 /** Provides global document shell, styles, and top navigation. */
 export default function RootLayout({
   children,
@@ -37,6 +43,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <AppShell>{children}</AppShell>
       </body>
     </html>

@@ -119,7 +119,7 @@ export default function ArtworkUploadForm({ onCreated, submitLabel = "Post paint
         {previewUrl ? (
           <>
             <Image src={previewUrl} alt="Selected preview" fill className="object-cover" unoptimized />
-            <span className="absolute bottom-3 right-3 rounded-full bg-black/70 px-3 py-1 text-xs font-medium text-foreground backdrop-blur">
+            <span className="absolute bottom-3 right-3 rounded-full bg-black/70 px-3 py-1 text-xs font-medium text-white backdrop-blur">
               Click to replace
             </span>
           </>

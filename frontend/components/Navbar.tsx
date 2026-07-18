@@ -14,8 +14,10 @@ export default function Navbar() {
   const { user, logout } = useAuth();
 
   if (pathname === "/") {
+    // The landing hero is always dark (see HeroSection), so this transparent
+    // nav overlays it in a fixed dark scope regardless of the app theme.
     return (
-      <header className="absolute top-0 left-0 right-0 z-10 flex h-16 items-center justify-between px-6 bg-transparent">
+      <header className="dark absolute top-0 left-0 right-0 z-10 flex h-16 items-center justify-between px-6 bg-transparent">
         <Link href="/" className="flex items-center gap-2">
           <span aria-hidden="true" className="text-xl">🎨</span>
           <span className="font-serif text-lg font-semibold tracking-tight text-foreground">Painting Gallery</span>

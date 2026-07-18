@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/components/AuthProvider';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,6 +21,14 @@ export default function LoginPage() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Surface a friendly message when the Google callback bounced back with an error
+  // (e.g. a suspended account) via ?error=oauth.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('error') === 'oauth') {
+      setError('We could not sign you in with Google. Please try again or use your email and password.');
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,6 +131,17 @@ export default function LoginPage() {
             {loading ? 'Authenticating...' : mfaRequired ? 'Verify & Sign In' : 'Sign In'}
           </button>
         </form>
+
+        {!mfaRequired && (
+          <>
+            <div className="flex items-center gap-3">
+              <span className="h-px flex-1 bg-hairline" />
+              <span className="text-xs uppercase tracking-wide text-muted">or</span>
+              <span className="h-px flex-1 bg-hairline" />
+            </div>
+            <GoogleSignInButton />
+          </>
+        )}
 
         <p className="text-center text-sm text-muted mt-4">
           Don&apos;t have an account?{' '}

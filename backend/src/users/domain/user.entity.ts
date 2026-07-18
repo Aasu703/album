@@ -1,10 +1,13 @@
 export type UserRole = 'USER' | 'VERIFIED_ARTIST' | 'ADMIN';
 export type SellerStatus = 'none' | 'pending' | 'approved' | 'rejected';
+/** How the account authenticates. 'local' = email + password; others are OAuth. */
+export type AuthProvider = 'local' | 'google';
 
 export interface User {
   id: string;
   email: string;
-  passwordHash: string;
+  /** Null for OAuth-only accounts, which never set a local password. */
+  passwordHash?: string | null;
   firstName: string;
   lastName: string;
   phone?: string | null;
@@ -17,6 +20,14 @@ export interface User {
   lockoutUntil?: Date | null;
   isMfaEnabled?: boolean;
   mfaSecret?: string | null;
+  /** Identity provider that owns this account. Defaults to 'local'. */
+  provider?: AuthProvider;
+  /** Stable per-provider subject id (e.g. Google `sub`); null for local accounts. */
+  providerId?: string | null;
+  /** bcrypt hash of the current password-reset OTP; null when no reset is pending. */
+  resetOtpHash?: string | null;
+  /** When the pending reset OTP expires. */
+  resetOtpExpires?: Date | null;
 }
 
 export type NewUser = Omit<

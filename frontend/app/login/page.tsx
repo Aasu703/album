@@ -32,7 +32,11 @@ export default function LoginPage() {
 
     if (result.success) {
       // On success, the backend sets HttpOnly cookies (we don't receive raw JWTs).
-      router.push('/dashboard');
+      // Honor a ?next= target from the edge auth guard, but only same-origin paths
+      // (must start with a single "/") so it can't be used as an open redirect.
+      const next = new URLSearchParams(window.location.search).get('next');
+      const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard';
+      router.push(safeNext);
     } else if (result.mfaRequired) {
       setMfaRequired(true);
     } else {

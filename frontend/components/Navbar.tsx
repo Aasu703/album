@@ -76,6 +76,12 @@ export default function Navbar() {
                   Admin
                 </Link>
               ) : null}
+              <Link
+                href="/dashboard"
+                className="hidden text-sm font-semibold text-muted transition-colors duration-300 ease-out hover:text-accent sm:inline"
+              >
+                Dashboard
+              </Link>
               {user.role !== "ADMIN" ? (
                 <Link
                   href="/upload"
@@ -85,12 +91,16 @@ export default function Navbar() {
                   <span className="hidden sm:inline">Create</span>
                 </Link>
               ) : null}
-              <Link href="/dashboard" className="flex items-center gap-2">
+              <Link
+                href="/profile"
+                className="flex items-center gap-2"
+                title="Your profile"
+              >
                 <Avatar name={displayName} color={generateAvatarColor(user.email)} size="sm" />
+                <span className="hidden max-w-32 truncate text-sm font-semibold text-foreground transition-colors duration-300 ease-out hover:text-accent sm:inline">
+                  {displayName}
+                </span>
               </Link>
-              <span className="hidden max-w-32 truncate text-sm font-semibold text-foreground sm:inline">
-                {displayName}
-              </span>
               <button
                 type="button"
                 onClick={() => void logout()}

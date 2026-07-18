@@ -16,8 +16,13 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
+    // Full strict type-checking is on. The three opt-outs below are deliberate and
+    // idiomatic for NestJS: decorated DTO/schema properties are assigned by the
+    // framework (not a constructor), and the codebase relies on implicit-any and
+    // relaxed bind/call/apply in a few decorator-heavy spots.
+    "strict": true,
+    "strictPropertyInitialization": false,
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false

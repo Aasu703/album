@@ -3,9 +3,32 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ── Champagne Noir ───────────────────────────────────────────────────────
-   Near-black surfaces, warm ivory text, a muted brass/gold accent.
-   Auction-house palette: gold reads as the single "action" colour. */
+   Two matched themes sharing one warm, auction-house identity where the brass
+   accent reads as the single "action" colour.
+
+   Light (:root) uses a *dark* brass so that both `text-accent` on a light
+   surface and `text-background` on an accent button stay legible. Dark (.dark)
+   flips to a *light* gold. Because the accent and the background always sit on
+   opposite ends of the luminance range, the existing `bg-accent text-background`
+   buttons keep good contrast in both themes without per-component changes. */
 :root {
+  color-scheme: light;
+  --background: #faf8f3;
+  --surface: #ffffff;
+  --surface-raised: #f2eee4;
+  --foreground: #201c16;
+  --muted: #6b6355;
+  --hairline: #e6e0d3;
+  --accent: #7a5f28;
+  --accent-hover: #634d20;
+  --accent-soft: rgba(122, 95, 40, 0.12);
+  --success: #2f8f57;
+  --danger: #c14338;
+  --warning: #a9661d;
+}
+
+.dark {
+  color-scheme: dark;
   --background: #0b0b0c;
   --surface: #16161a;
   --surface-raised: #1d1d22;
@@ -18,17 +41,6 @@
   --success: #6fbf8b;
   --danger: #e2665a;
   --warning: #d98c3c;
-}
-
-/* The app renders dark by default; keep .dark aligned so the toggle can't
-   strand a page in a half-lit state. */
-.dark {
-  --background: #0b0b0c;
-  --surface: #16161a;
-  --surface-raised: #1d1d22;
-  --foreground: #f5f0e8;
-  --muted: #a39a8b;
-  --hairline: #2a2a2c;
 }
 
 @theme inline {

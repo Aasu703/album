@@ -6,6 +6,18 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
 const MAX_TRACKED_BUCKETS = 5_000;
 
+// Page routes that require a session. A first-line edge guard so unauthenticated
+// visitors are redirected to /login before any protected UI renders — the API and
+// client-side role checks remain the real authorization boundary. /upload is
+// intentionally omitted: it greets signed-out visitors with a sign-in prompt.
+const PROTECTED_PREFIXES = ["/dashboard", "/profile", "/admin"];
+
+function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 const buckets = new Map<string, { count: number; resetAt: number }>();
 
 function pruneExpiredBuckets(now: number) {
@@ -95,6 +107,21 @@ export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const response = NextResponse.next();
   applySecurityHeaders(response);
+
+  // Edge auth guard: block protected pages when no session cookie is present.
+  // An expired access token with a valid refresh token still passes (the client
+  // silently refreshes); only a total absence of both bounces to /login.
+  if (isProtectedPath(pathname)) {
+    const hasSession =
+      request.cookies.has("accessToken") || request.cookies.has("refreshToken");
+    if (!hasSession) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("next", pathname);
+      const redirect = NextResponse.redirect(loginUrl);
+      applySecurityHeaders(redirect);
+      return redirect;
+    }
+  }
 
   if (!pathname.startsWith("/api/")) {
     return response;

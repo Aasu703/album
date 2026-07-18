@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useAuth } from '@/components/AuthProvider';
 import { api } from '@/lib/api';
-import type { Artwork, ArtworkPainter } from '@/app/lib/types';
-import ReactionBar from '@/components/ReactionBar';
+import type { Artwork } from '@/app/lib/types';
 import CreateListingModal from './_components/CreateListingModal';
+import GalleryFeedCard from './_components/GalleryFeedCard';
+import ArtistArtworkCard from './_components/ArtistArtworkCard';
 
 function extractErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'response' in error) {
@@ -18,12 +18,6 @@ function extractErrorMessage(error: unknown): string {
     if (typeof message === 'string') return message;
   }
   return error instanceof Error ? error.message : 'Something went wrong.';
-}
-
-function painterName(painterId: Artwork['painterId']): string {
-  if (typeof painterId === 'string') return 'Independent artist';
-  const painter = painterId as ArtworkPainter;
-  return `${painter.firstName} ${painter.lastName}`;
 }
 
 export default function DashboardPage() {
@@ -187,25 +181,7 @@ export default function DashboardPage() {
             ) : (
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {myArtworks.map((art) => (
-                  <Link
-                    key={art.id}
-                    href={`/paintings/${art.id}`}
-                    className="group block overflow-hidden rounded-2xl border border-hairline bg-surface transition-colors duration-300 ease-out hover:border-accent/60"
-                  >
-                    <div className="relative aspect-square overflow-hidden bg-surface-raised">
-                      <Image
-                        src={art.imageUrl}
-                        alt={art.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="space-y-2 p-6">
-                      <h3 className="text-xl font-bold">{art.title}</h3>
-                      <p className="line-clamp-2 text-sm text-muted">{art.description}</p>
-                    </div>
-                  </Link>
+                  <ArtistArtworkCard key={art.id} artwork={art} />
                 ))}
               </div>
             )}
@@ -231,41 +207,7 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {feed.map((art) => (
-                <div
-                  key={art.id}
-                  className="flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface"
-                >
-                  <Link href={`/paintings/${art.id}`} className="group block">
-                    <div className="relative aspect-square overflow-hidden bg-surface-raised">
-                      <Image
-                        src={art.imageUrl}
-                        alt={art.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                      />
-                    </div>
-                  </Link>
-                  <div className="flex flex-1 flex-col gap-3 p-5">
-                    <div>
-                      <Link href={`/paintings/${art.id}`}>
-                        <h3 className="truncate text-lg font-semibold text-foreground transition-colors duration-300 ease-out hover:text-accent">
-                          {art.title}
-                        </h3>
-                      </Link>
-                      <p className="truncate text-xs text-muted">by {painterName(art.painterId)}</p>
-                    </div>
-                    <div className="mt-auto">
-                      <ReactionBar artworkId={art.id} />
-                      <Link
-                        href={`/paintings/${art.id}`}
-                        className="mt-3 inline-block text-xs font-semibold text-muted transition-colors duration-300 ease-out hover:text-accent"
-                      >
-                        View & comment →
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                <GalleryFeedCard key={art.id} artwork={art} />
               ))}
             </div>
           )}

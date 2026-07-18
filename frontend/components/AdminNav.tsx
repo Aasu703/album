@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { useAuth } from "@/components/AuthProvider";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const TABS = [
   { href: "/admin", label: "Overview" },
@@ -33,9 +34,12 @@ export default function AdminNav() {
             <span aria-hidden="true">🛡️</span>
             Admin Console
           </Link>
-          <Link href="/dashboard" className="text-sm font-semibold text-muted transition-colors duration-300 ease-out hover:text-accent">
-            Exit to site
-          </Link>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <Link href="/dashboard" className="text-sm font-semibold text-muted transition-colors duration-300 ease-out hover:text-accent">
+              Exit to site
+            </Link>
+          </div>
         </div>
         <nav className="flex gap-1">
           {TABS.map((tab) => {

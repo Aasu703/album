@@ -77,9 +77,11 @@ function extractErrorMessage(error: unknown): string {
 
 /** Provides auth state backed by NestJS httpOnly cookies (no client-side token handling). */
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Hydrate from the cached profile so the signed-in UI shows immediately on reload;
-  // the /auth/me bootstrap below reconciles it with the real session.
-  const [user, setUserState] = useState<AuthUser | null>(readCachedUser);
+  // Starts null to match the server-rendered HTML (there is no localStorage on the
+  // server) — reading the cache here would break hydration. The mount effect below
+  // hydrates from the cached profile immediately after, so the signed-in UI still
+  // appears without waiting for /auth/me.
+  const [user, setUserState] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Single writer for the user so React state and the localStorage cache never drift.
@@ -98,11 +100,17 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }
 
   useEffect(() => {
+    // Post-hydration optimism: show the last-known signed-in state instantly from the
+    // cache (this runs after hydration, so it can't cause a server/client mismatch).
+    const cached = readCachedUser();
+    if (cached) {
+      setUserState(cached);
+    }
     // Mount-time session bootstrap: read the httpOnly-cookie session from the API and
-    // reflect it into React state. This is a valid effect (syncing from an external
-    // system), and the setState runs after the async request resolves, not synchronously.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // reflect it into React state, reconciling (or clearing) the optimistic cache above.
     void refreshUser().finally(() => setIsLoading(false));
+    // Bootstrap must run exactly once on mount; refreshUser is intentionally omitted.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function login(email: string, password: string, mfaToken?: string): Promise<AuthResult> {

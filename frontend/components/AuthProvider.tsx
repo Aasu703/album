@@ -31,6 +31,36 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Cache key for the last-known user PROFILE (never a token — the JWT stays in the
+// httpOnly cookie). This is UI-only optimism: it lets the app render the signed-in
+// state instantly on reload instead of flashing "logged out" while /auth/me resolves.
+// The server still enforces every permission, so a stale/tampered value grants nothing.
+const USER_CACHE_KEY = "album.user";
+
+function readCachedUser(): AuthUser | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(USER_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedUser(user: AuthUser | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (user) {
+      window.localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+    } else {
+      window.localStorage.removeItem(USER_CACHE_KEY);
+    }
+  } catch {
+    // Storage can be unavailable (private mode, quota) — the app still works
+    // without the optimistic cache, so this is best-effort only.
+  }
+}
+
 function extractErrorMessage(error: unknown): string {
   if (error && typeof error === "object" && "response" in error) {
     const response = (error as { response?: { data?: { message?: unknown } } }).response;
@@ -47,8 +77,16 @@ function extractErrorMessage(error: unknown): string {
 
 /** Provides auth state backed by NestJS httpOnly cookies (no client-side token handling). */
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  // Hydrate from the cached profile so the signed-in UI shows immediately on reload;
+  // the /auth/me bootstrap below reconciles it with the real session.
+  const [user, setUserState] = useState<AuthUser | null>(readCachedUser);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Single writer for the user so React state and the localStorage cache never drift.
+  function setUser(next: AuthUser | null) {
+    setUserState(next);
+    writeCachedUser(next);
+  }
 
   async function refreshUser() {
     try {

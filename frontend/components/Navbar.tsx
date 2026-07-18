@@ -71,6 +71,15 @@ export default function Navbar() {
                   Admin
                 </Link>
               ) : null}
+              {user.role !== "ADMIN" ? (
+                <Link
+                  href="/upload"
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-background shadow-sm transition-colors duration-300 ease-out hover:bg-accent-hover"
+                >
+                  <span aria-hidden="true" className="text-base leading-none">＋</span>
+                  <span className="hidden sm:inline">Create</span>
+                </Link>
+              ) : null}
               <Link href="/dashboard" className="flex items-center gap-2">
                 <Avatar name={displayName} color={generateAvatarColor(user.email)} size="sm" />
               </Link>

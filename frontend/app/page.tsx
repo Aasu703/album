@@ -58,18 +58,24 @@ const STEPS = [
   },
   {
     emoji: "🎨",
-    title: "Become an artist",
-    body: "Apply to become a verified painter and share your own work with collectors.",
+    title: "Share your work",
+    body: "Become a verified painter and upload your own pieces for collectors to discover.",
   },
+];
+
+const STATS = [
+  { value: "Original", label: "Every piece, one of a kind" },
+  { value: "Direct", label: "Straight from the artist" },
+  { value: "Curated", label: "A gallery, reimagined" },
 ];
 
 export default async function Home() {
   const showcase = await fetchShowcase();
 
   return (
-    <div className="h-screen snap-y snap-proximity overflow-y-auto bg-background text-foreground">
+    <div className="bg-background text-foreground">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="relative h-screen snap-start overflow-hidden">
+      <section className="relative h-screen overflow-hidden">
         {/* Noise texture */}
         <svg
           className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-[0.025]"
@@ -104,7 +110,7 @@ export default async function Home() {
             the pieces you love.
           </p>
 
-          <div className="mt-8 flex justify-center gap-3">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href="/register"
               className="rounded-full border border-hairline bg-surface/60 px-7 py-3 text-sm font-medium text-foreground backdrop-blur transition-colors duration-300 ease-out hover:border-accent hover:text-accent"
@@ -118,16 +124,27 @@ export default async function Home() {
               Log in
             </Link>
           </div>
+
+          <Link
+            href="/upload"
+            className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors duration-300 ease-out hover:text-accent"
+          >
+            <span aria-hidden="true">＋</span> Share your work
+          </Link>
         </div>
 
-        <div className="absolute bottom-6 left-1/2 z-[2] -translate-x-1/2 text-xs uppercase tracking-[0.15em] text-muted">
+        <a
+          href="#showcase"
+          className="absolute bottom-6 left-1/2 z-[2] flex -translate-x-1/2 flex-col items-center gap-1.5 text-xs uppercase tracking-[0.15em] text-muted transition-colors duration-300 ease-out hover:text-accent"
+        >
           Scroll to explore
-        </div>
+          <span aria-hidden="true" className="animate-bounce text-base">↓</span>
+        </a>
       </section>
 
       {/* ── Showcase ─────────────────────────────────────────────────────── */}
       {showcase.length > 0 ? (
-        <section className="relative z-[3] flex min-h-screen snap-start flex-col justify-center border-t border-hairline bg-background px-6 py-20">
+        <section id="showcase" className="relative z-[3] flex min-h-screen flex-col justify-center border-t border-hairline bg-background px-6 py-20">
           <div className="mx-auto w-full max-w-6xl">
             <ScrollReveal>
               <div className="text-center">
@@ -177,19 +194,35 @@ export default async function Home() {
         </section>
       ) : null}
 
-      {/* ── How it works ─────────────────────────────────────────────────── */}
-      <section className="relative z-[3] flex min-h-screen snap-start flex-col justify-center border-t border-hairline bg-background px-6 py-20">
+      {/* ── About / How it works ─────────────────────────────────────────── */}
+      <section id="about" className="relative z-[3] flex min-h-screen flex-col justify-center border-t border-hairline bg-background px-6 py-20">
         <div className="mx-auto w-full max-w-5xl">
           <ScrollReveal>
             <div className="text-center">
-              <p className="text-xs uppercase tracking-[0.2em] text-accent">How it works</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-accent">About</p>
               <h2 className="mt-2 font-serif text-[clamp(2rem,4vw,3rem)] font-semibold tracking-tight text-foreground">
                 A gallery, reimagined
               </h2>
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted">
+                Painting Gallery is a home for original art — a place where independent painters
+                post their work and collectors react, comment, and follow along. No middlemen, no
+                prints, just one-of-a-kind pieces shared directly by the people who made them.
+              </p>
             </div>
           </ScrollReveal>
 
-          <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {STATS.map((stat, i) => (
+              <ScrollReveal key={stat.value} delay={i * 80}>
+                <div className="rounded-2xl border border-hairline bg-surface px-6 py-8 text-center">
+                  <p className="font-serif text-2xl font-semibold text-accent">{stat.value}</p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.15em] text-muted">{stat.label}</p>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
             {STEPS.map((step, i) => (
               <ScrollReveal key={step.title} delay={i * 100}>
                 <div className="h-full rounded-3xl border border-hairline bg-surface p-8 transition-colors duration-300 ease-out hover:border-accent/50">
@@ -206,7 +239,7 @@ export default async function Home() {
       </section>
 
       {/* ── Closing CTA ──────────────────────────────────────────────────── */}
-      <section className="relative z-[3] flex min-h-screen snap-start flex-col items-center justify-center border-t border-hairline bg-background px-6 py-20 text-center">
+      <section className="relative z-[3] flex min-h-screen flex-col items-center justify-center border-t border-hairline bg-background px-6 py-20 text-center">
         <ScrollReveal>
           <h2 className="mx-auto max-w-2xl font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-semibold leading-tight tracking-tight text-foreground">
             Start collecting the work you love
@@ -214,7 +247,7 @@ export default async function Home() {
           <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted">
             Join a community of collectors and independent artists. It only takes a moment.
           </p>
-          <div className="mt-8 flex justify-center gap-3">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href="/register"
               className="rounded-full bg-accent px-8 py-3 text-sm font-semibold text-background transition-colors duration-300 ease-out hover:bg-accent-hover"
@@ -226,6 +259,12 @@ export default async function Home() {
               className="rounded-full border border-hairline bg-surface px-8 py-3 text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:border-accent hover:text-accent"
             >
               Log in
+            </Link>
+            <Link
+              href="/upload"
+              className="rounded-full border border-hairline bg-surface px-8 py-3 text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:border-accent hover:text-accent"
+            >
+              ＋ Share your work
             </Link>
           </div>
         </ScrollReveal>

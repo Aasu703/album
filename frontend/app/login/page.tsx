@@ -22,11 +22,17 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Surface a friendly message when the Google callback bounced back with an error
-  // (e.g. a suspended account) via ?error=oauth.
+  const [notice, setNotice] = useState('');
+
+  // Surface friendly messages from redirects: a failed Google callback (?error=oauth)
+  // or a completed password reset (?reset=1).
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('error') === 'oauth') {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get('error') === 'oauth') {
       setError('We could not sign you in with Google. Please try again or use your email and password.');
+    }
+    if (query.get('reset') === '1') {
+      setNotice('Your password has been reset. Please sign in with your new password.');
     }
   }, []);
 
@@ -60,6 +66,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 space-y-6 bg-surface rounded-2xl shadow-2xl border border-hairline">
         <h1 className="font-serif text-3xl font-semibold text-center text-foreground">Sign In</h1>
 
+        {notice && (
+          <div className="p-3 text-sm text-success bg-success/10 border border-success/40 rounded-lg">
+            {notice}
+          </div>
+        )}
+
         {error && (
           <div className="p-3 text-sm text-danger bg-danger/10 border border-danger/40 rounded-lg">
             {error}
@@ -80,7 +92,16 @@ export default function LoginPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-muted">Password</label>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className="block text-sm font-medium text-muted">Password</label>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/forgot-password')}
+                    className="text-xs font-medium text-accent transition-colors duration-300 ease-out hover:text-accent-hover"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}

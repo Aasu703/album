@@ -10,6 +10,7 @@ import { UserRepositoryImpl } from './infrastructure/user.repository.impl';
 import { AuthController } from './presentation/auth.controller';
 import { UsersController } from './presentation/users.controller';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from './presentation/guards/optional-jwt-auth.guard';
 import { RolesGuard } from './presentation/guards/roles.guard';
 import { GoogleStrategy } from './presentation/strategies/google.strategy';
 
@@ -25,10 +26,11 @@ import { GoogleStrategy } from './presentation/strategies/google.strategy';
   providers: [
     AuthService,
     JwtAuthGuard,
+    OptionalJwtAuthGuard,
     RolesGuard,
     GoogleStrategy,
     { provide: USER_REPOSITORY, useClass: UserRepositoryImpl },
   ],
-  exports: [AuthService, JwtAuthGuard, RolesGuard, USER_REPOSITORY, JwtModule],
+  exports: [AuthService, JwtAuthGuard, OptionalJwtAuthGuard, RolesGuard, USER_REPOSITORY, JwtModule],
 })
 export class UsersModule {}

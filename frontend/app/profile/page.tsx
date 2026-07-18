@@ -154,6 +154,21 @@ export default function ProfilePage() {
         </form>
       </section>
 
+      <section className="rounded-2xl border border-hairline bg-surface p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-serif text-lg font-semibold text-foreground">Password</h2>
+            <p className="mt-1 text-sm text-muted">Change the password you use to sign in.</p>
+          </div>
+          <Link
+            href="/profile/change-password"
+            className="rounded-full border border-hairline bg-surface-raised px-4 py-2 text-sm font-semibold text-foreground transition-colors duration-300 ease-out hover:border-accent hover:text-accent"
+          >
+            Change password
+          </Link>
+        </div>
+      </section>
+
       <section>
         <MfaSetup />
       </section>

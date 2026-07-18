@@ -25,8 +25,12 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           <ThemeToggle />
           {user ? (
-            <Link href="/dashboard" className="text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:text-accent">
-              {user.firstName}
+            <Link href="/profile" title="Your profile" className="transition-opacity duration-300 ease-out hover:opacity-80">
+              <Avatar
+                name={`${user.firstName} ${user.lastName}`}
+                color={generateAvatarColor(user.email)}
+                size="sm"
+              />
             </Link>
           ) : (
             <>

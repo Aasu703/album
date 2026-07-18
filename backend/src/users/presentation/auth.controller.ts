@@ -7,10 +7,16 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { MfaTokenDto } from './dto/mfa.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthenticatedRequest } from './guards/jwt-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { GoogleOAuthUser } from './strategies/google.strategy';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000';
 
 function cookieOptions(maxAge: number): CookieOptions {
   return {
@@ -85,6 +91,72 @@ export class AuthController {
   async me(@CurrentUser() user: AuthenticatedRequest['user']) {
     const profile = await this.authService.me(user.sub);
     return { success: true, data: { user: profile } };
+  }
+
+  // ---- Password reset (email OTP) ----
+
+  /** Step 1: request a reset code. Always returns success (never reveals if the email exists). */
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('forgot-password')
+  @HttpCode(200)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.authService.forgotPassword(dto.email);
+    return {
+      success: true,
+      message: 'If an account exists for that email, a reset code has been sent.',
+    };
+  }
+
+  /** Step 2: submit the emailed code plus a new password. */
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('reset-password')
+  @HttpCode(200)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto.email, dto.otp, dto.newPassword);
+    return { success: true, message: 'Your password has been reset. You can now sign in.' };
+  }
+
+  /** Authenticated: change your own password (requires the current one). */
+  @Post('change-password')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @CurrentUser() user: AuthenticatedRequest['user'],
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.authService.changePassword(user.sub, dto.currentPassword, dto.newPassword);
+    return { success: true, message: 'Your password has been updated.' };
+  }
+
+  // ---- Google OAuth ----
+
+  /**
+   * Step 1: kick off the Google OAuth flow. The guard immediately redirects the browser
+   * to Google's consent screen, so this handler body never actually runs.
+   */
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  googleAuth() {
+    // Intentionally empty — GoogleAuthGuard performs the redirect to Google.
+  }
+
+  /**
+   * Step 2: Google redirects back here. The guard validates the response and populates
+   * req.user; we exchange it for our own session cookies and bounce to the frontend.
+   */
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
+    try {
+      const oauthUser = req.user as GoogleOAuthUser;
+      const result = await this.authService.validateOAuthLogin(oauthUser);
+      setAuthCookies(res, result.accessToken, result.refreshToken);
+      return res.redirect(`${FRONTEND_ORIGIN}/dashboard`);
+    } catch {
+      // Banned account or any linking failure — send the user back to login with a flag
+      // rather than leaking the reason in the URL.
+      return res.redirect(`${FRONTEND_ORIGIN}/login?error=oauth`);
+    }
   }
 
   // ---- TOTP-based MFA (baseline requirement) ----

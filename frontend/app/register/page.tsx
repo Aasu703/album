@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/components/AuthProvider';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -174,6 +175,13 @@ export default function RegisterPage() {
             {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
+
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-hairline" />
+          <span className="text-xs uppercase tracking-wide text-muted">or</span>
+          <span className="h-px flex-1 bg-hairline" />
+        </div>
+        <GoogleSignInButton label="Sign up with Google" />
 
         <p className="text-center text-sm text-muted mt-4">
           Already have an account?{' '}

@@ -53,6 +53,23 @@ export class CommentsService {
     return { items, total, page, limit };
   }
 
+  /** All comments a user has left, newest first, each with a light reference to its artwork. */
+  async listByAuthor(userId: string, page = 1, limit = 20) {
+    const filter = { authorId: new Types.ObjectId(userId) };
+    const [items, total] = await Promise.all([
+      this.commentModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        // artworkId has no schema-level ref, so populate with the model explicitly.
+        // Private artworks still surface here because the viewer is the comment's author.
+        .populate({ path: 'artworkId', model: this.artworkModel, select: 'title imageUrl visibility' }),
+      this.commentModel.countDocuments(filter),
+    ]);
+    return { items, total, page, limit };
+  }
+
   async remove(commentId: string, userId: string, isAdmin: boolean) {
     const comment = await this.commentModel.findById(commentId);
     if (!comment) {

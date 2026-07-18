@@ -11,11 +11,13 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { JwtSignOptions } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { User, UserRole } from '../domain/user.entity';
+import { AuthProvider, User, UserRole } from '../domain/user.entity';
 import { USER_REPOSITORY } from '../domain/user.repository';
 import type { UserRepository } from '../domain/user.repository';
 import { LoginDto } from '../presentation/dto/login.dto';
 import { RegisterDto } from '../presentation/dto/register.dto';
+import { MailService } from '../../mail/mail.service';
+import * as crypto from 'crypto';
 
 export interface AuthTokens {
   accessToken: string;
@@ -52,6 +54,7 @@ function toPublicUser(user: User): PublicUser {
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 10;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+const RESET_OTP_TTL_MINUTES = 10;
 
 @Injectable()
 export class AuthService {
@@ -59,6 +62,7 @@ export class AuthService {
     @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   private signTokens(user: User): AuthTokens {
@@ -117,6 +121,14 @@ export class AuthService {
       throw new ForbiddenException('Account locked due to too many failed attempts. Try again later.');
     }
 
+    if (!user.passwordHash) {
+      // OAuth-only account (e.g. signed up with Google) has no local password to check.
+      // Keep the message identical to a wrong password so we don't reveal how the
+      // account authenticates (user-enumeration hardening).
+      await bcrypt.compare(dto.password, '$2b$12$invalidsaltinvalidsaltinvalidsaltinva');
+      throw new UnauthorizedException('Invalid email or password.');
+    }
+
     const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatches) {
       const failedAttempts = (user.failedLoginAttempts || 0) + 1;
@@ -143,6 +155,52 @@ export class AuthService {
       if (!isValid) {
         throw new UnauthorizedException('Invalid MFA token.');
       }
+    }
+
+    const tokens = this.signTokens(user);
+    return { user: toPublicUser(user), ...tokens };
+  }
+
+  /**
+   * Logs a user in via a verified OAuth identity (e.g. Google). We trust the provider's
+   * verified email as the account key: an existing account with the same email is reused
+   * (and linked to the provider), otherwise a fresh passwordless account is created.
+   * Returns the same shape as `login()` so the controller can set cookies identically.
+   */
+  async validateOAuthLogin(profile: {
+    provider: AuthProvider;
+    providerId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<{ user: PublicUser } & AuthTokens> {
+    const email = profile.email.toLowerCase().trim();
+
+    let user = await this.userRepository.findByEmail(email);
+
+    if (user) {
+      if (user.isBanned) {
+        throw new ForbiddenException('This account has been suspended. Contact support for help.');
+      }
+      // Link the provider identity to the existing account the first time we see it.
+      if (user.providerId !== profile.providerId) {
+        const updated = await this.userRepository.update(user.id, {
+          providerId: profile.providerId,
+        });
+        if (updated) user = updated;
+      }
+    } else {
+      // First sign-in for this person — create a passwordless account owned by the provider.
+      // `required` string fields can't be empty in Mongoose, so fall back to safe defaults.
+      user = await this.userRepository.create({
+        email,
+        passwordHash: null,
+        firstName: profile.firstName?.trim() || 'Member',
+        lastName: profile.lastName?.trim() || 'User',
+        phone: null,
+        provider: profile.provider,
+        providerId: profile.providerId,
+      });
     }
 
     const tokens = this.signTokens(user);
@@ -288,6 +346,86 @@ export class AuthService {
       throw new BadRequestException('Failed to update profile.');
     }
     return toPublicUser(updated);
+  }
+
+  // ---- Password reset (email OTP) ----
+
+  /**
+   * Starts a password reset. Always resolves without revealing whether the email exists
+   * (anti-enumeration). For a valid local account we generate a 6-digit OTP, store only its
+   * bcrypt hash with a short expiry, and email the raw code. OAuth-only accounts (no local
+   * password) are silently skipped — there is nothing to reset.
+   */
+  async forgotPassword(email: string): Promise<void> {
+    const normalized = email.toLowerCase().trim();
+    const user = await this.userRepository.findByEmail(normalized);
+
+    if (!user || user.isBanned || !user.passwordHash) {
+      return;
+    }
+
+    // 6-digit code, generated with a CSPRNG (0–999999, zero-padded).
+    const otp = crypto.randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const resetOtpHash = await bcrypt.hash(otp, 10);
+    const resetOtpExpires = new Date(Date.now() + RESET_OTP_TTL_MINUTES * 60 * 1000);
+
+    await this.userRepository.update(user.id, { resetOtpHash, resetOtpExpires });
+    await this.mailService.sendPasswordResetOtp(user.email, otp, RESET_OTP_TTL_MINUTES);
+  }
+
+  /** Completes a reset: verifies the OTP, sets the new password, and clears the OTP. */
+  async resetPassword(email: string, otp: string, newPassword: string): Promise<void> {
+    const normalized = email.toLowerCase().trim();
+    const user = await this.userRepository.findByEmail(normalized);
+
+    // Uniform failure message so an attacker can't distinguish "no such email" from "bad code".
+    const genericError = new BadRequestException('Invalid or expired reset code.');
+
+    if (!user || !user.resetOtpHash || !user.resetOtpExpires) {
+      throw genericError;
+    }
+    if (user.resetOtpExpires.getTime() < Date.now()) {
+      throw genericError;
+    }
+    const otpMatches = await bcrypt.compare(otp, user.resetOtpHash);
+    if (!otpMatches) {
+      throw genericError;
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.userRepository.update(user.id, {
+      passwordHash,
+      resetOtpHash: null,
+      resetOtpExpires: null,
+      // A successful reset also clears any brute-force lockout.
+      failedLoginAttempts: 0,
+      lockoutUntil: null,
+    });
+  }
+
+  /** Authenticated self-service password change: verify the current password, set a new one. */
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+    if (!user.passwordHash) {
+      // OAuth-only account has no local password to change.
+      throw new BadRequestException(
+        'This account signs in with Google and has no password to change.',
+      );
+    }
+
+    const matches = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!matches) {
+      throw new BadRequestException('Your current password is incorrect.');
+    }
+    if (currentPassword === newPassword) {
+      throw new BadRequestException('New password must be different from the current one.');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.userRepository.update(user.id, { passwordHash });
   }
 
   // ---- Admin: user & painter management ----

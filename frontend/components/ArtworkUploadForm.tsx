@@ -30,6 +30,7 @@ interface ArtworkUploadFormProps {
 export default function ArtworkUploadForm({ onCreated, submitLabel = "Post painting" }: ArtworkUploadFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -85,6 +86,7 @@ export default function ArtworkUploadForm({ onCreated, submitLabel = "Post paint
     const formData = new FormData();
     formData.append("title", title);
     formData.append("description", description);
+    formData.append("visibility", visibility);
     formData.append("image", file);
 
     setSubmitting(true);
@@ -92,6 +94,7 @@ export default function ArtworkUploadForm({ onCreated, submitLabel = "Post paint
       await api.post("/artworks", formData);
       setTitle("");
       setDescription("");
+      setVisibility("public");
       setFile(null);
       onCreated();
     } catch (err) {
@@ -166,6 +169,38 @@ export default function ArtworkUploadForm({ onCreated, submitLabel = "Post paint
           placeholder="Tell collectors about the medium, story, or inspiration"
           className="w-full rounded-lg border border-hairline bg-surface-raised p-3 text-foreground outline-none transition-colors duration-300 ease-out focus:border-accent focus:ring-2 focus:ring-accent"
         />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-muted">Visibility</label>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setVisibility("public")}
+            aria-pressed={visibility === "public"}
+            className={`rounded-lg border p-3 text-left transition-colors duration-300 ease-out ${
+              visibility === "public"
+                ? "border-accent bg-accent-soft"
+                : "border-hairline bg-surface-raised hover:border-accent/60"
+            }`}
+          >
+            <span className="block text-sm font-semibold text-foreground">🌐 Public</span>
+            <span className="mt-0.5 block text-xs text-muted">Anyone can see it in the gallery.</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setVisibility("private")}
+            aria-pressed={visibility === "private"}
+            className={`rounded-lg border p-3 text-left transition-colors duration-300 ease-out ${
+              visibility === "private"
+                ? "border-accent bg-accent-soft"
+                : "border-hairline bg-surface-raised hover:border-accent/60"
+            }`}
+          >
+            <span className="block text-sm font-semibold text-foreground">🔒 Private</span>
+            <span className="mt-0.5 block text-xs text-muted">Only you can see it.</span>
+          </button>
+        </div>
       </div>
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}

@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import { api } from '@/lib/api';
 import MfaSetup from '@/components/MfaSetup';
+import ProfileUploads from '@/components/ProfileUploads';
+import ProfileComments from '@/components/ProfileComments';
 
 function extractErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'response' in error) {
@@ -77,8 +79,8 @@ export default function ProfilePage() {
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-hairline pb-6">
         <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">Edit profile</h1>
-          <p className="mt-1 text-sm text-muted">Update your personal details and account security.</p>
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">Your profile</h1>
+          <p className="mt-1 text-sm text-muted">Your uploads, activity, and account settings in one place.</p>
         </div>
         <Link
           href="/dashboard"
@@ -87,6 +89,15 @@ export default function ProfilePage() {
           ← Back to dashboard
         </Link>
       </header>
+
+      <ProfileUploads />
+
+      <ProfileComments />
+
+      <div className="border-b border-hairline pb-2">
+        <h2 className="font-serif text-2xl font-semibold tracking-tight text-foreground">Settings</h2>
+        <p className="mt-1 text-sm text-muted">Manage your details and account security.</p>
+      </div>
 
       <section className="rounded-2xl border border-hairline bg-surface p-6">
         <h2 className="font-serif text-lg font-semibold text-foreground">Personal details</h2>

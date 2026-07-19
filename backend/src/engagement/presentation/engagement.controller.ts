@@ -51,6 +51,18 @@ export class EngagementController {
 
   // ---- Comments ----
 
+  // Authenticated: all comments the current user has left, with a link back to each artwork.
+  // Declared before the ':id' comment routes so "mine" isn't captured as an id.
+  @Get('comments/mine')
+  @UseGuards(JwtAuthGuard)
+  async myComments(
+    @CurrentUser() user: AuthenticatedRequest['user'],
+    @Query('page') page?: string,
+  ) {
+    const result = await this.commentsService.listByAuthor(user.sub, page ? Number(page) : 1);
+    return { success: true, data: result };
+  }
+
   @Get('artworks/:id/comments')
   async listComments(@Param('id') id: string, @Query('page') page?: string) {
     const result = await this.commentsService.list(id, page ? Number(page) : 1);

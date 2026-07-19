@@ -3,7 +3,7 @@ import { getInitials } from "@/lib/avatar";
 interface AvatarProps {
   name: string;
   color?: string | null;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   neutral?: boolean;
 }
 
@@ -11,6 +11,7 @@ const sizeClassMap: Record<NonNullable<AvatarProps["size"]>, string> = {
   sm: "h-8 w-8 text-xs",
   md: "h-10 w-10 text-sm",
   lg: "h-12 w-12 text-base",
+  xl: "h-24 w-24 text-3xl",
 };
 
 const colorClassMap: Record<string, string> = {

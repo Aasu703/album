@@ -27,7 +27,10 @@ CommentMongooseSchema.set('toJSON', {
   virtuals: true,
   transform: ((_doc: unknown, ret: Record<string, unknown>) => {
     ret.id = String(ret._id);
-    ret.artworkId = String(ret.artworkId);
+    // Leave populated refs (objects) intact; only stringify raw ObjectIds.
+    if (ret.artworkId && typeof ret.artworkId !== 'object') {
+      ret.artworkId = String(ret.artworkId);
+    }
     if (ret.authorId && typeof ret.authorId !== 'object') {
       ret.authorId = String(ret.authorId);
     }

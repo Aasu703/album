@@ -4,61 +4,24 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
-import { api } from '@/lib/api';
-import MfaSetup from '@/components/MfaSetup';
+import Avatar from '@/components/Avatar';
+import { generateAvatarColor } from '@/lib/avatar';
+import ProfileUploads from '@/components/ProfileUploads';
+import ProfileComments from '@/components/ProfileComments';
 
-function extractErrorMessage(error: unknown): string {
-  if (error && typeof error === 'object' && 'response' in error) {
-    const response = (error as { response?: { data?: { message?: unknown } } }).response;
-    const message = response?.data?.message;
-    if (Array.isArray(message)) return message.join(', ');
-    if (typeof message === 'string') return message;
-  }
-  return error instanceof Error ? error.message : 'Something went wrong.';
-}
+type Tab = 'posts' | 'activity';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, refreshUser } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('posts');
+  const [postCount, setPostCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-    // Prefill the form from the current session once auth resolves.
-    setFirstName(user.firstName);
-    setLastName(user.lastName);
-    setPhone(user.phone ?? '');
+    if (!user) router.push('/login');
   }, [authLoading, user, router]);
-
-  async function handleSave(event: React.FormEvent) {
-    event.preventDefault();
-    setSaving(true);
-    setError(null);
-    setStatus(null);
-    try {
-      await api.patch('/users/me', {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        phone: phone.trim(),
-      });
-      await refreshUser();
-      setStatus('Profile updated.');
-    } catch (err) {
-      setError(extractErrorMessage(err));
-    } finally {
-      setSaving(false);
-    }
-  }
 
   if (authLoading || !user) {
     return (
@@ -68,109 +31,86 @@ export default function ProfilePage() {
     );
   }
 
-  const inputClass =
-    'w-full rounded-lg border border-hairline bg-surface-raised p-3 text-sm text-foreground outline-none transition-colors duration-300 ease-out focus:border-accent focus:ring-2 focus:ring-accent';
-  const readonlyClass =
-    'w-full rounded-lg border border-hairline bg-background/60 p-3 text-sm text-muted';
+  const displayName = `${user.firstName} ${user.lastName}`.trim();
+  const username = user.email.split('@')[0];
+  const roleLabel = user.role.replace('_', ' ').toLowerCase();
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-hairline pb-6">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">Edit profile</h1>
-          <p className="mt-1 text-sm text-muted">Update your personal details and account security.</p>
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:px-6">
+      {/* Instagram-style header */}
+      <header className="flex flex-col items-center gap-6 border-b border-hairline pb-8 sm:flex-row sm:items-start sm:gap-12 sm:pl-6">
+        <Avatar name={displayName} color={generateAvatarColor(user.email)} size="xl" />
+
+        <div className="flex flex-1 flex-col items-center gap-4 sm:items-start">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <h1 className="text-xl font-semibold text-foreground">{username}</h1>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/profile/settings"
+                className="rounded-lg bg-surface-raised px-4 py-1.5 text-sm font-semibold text-foreground transition-colors duration-300 ease-out hover:bg-surface"
+              >
+                Edit profile
+              </Link>
+              {user.role !== 'ADMIN' ? (
+                <Link
+                  href="/upload"
+                  className="rounded-lg bg-accent px-4 py-1.5 text-sm font-semibold text-background transition-colors duration-300 ease-out hover:bg-accent-hover"
+                >
+                  + New
+                </Link>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="flex items-center gap-8">
+            <span className="text-sm text-foreground">
+              <strong className="font-semibold">{postCount ?? '—'}</strong>{' '}
+              <span className="text-muted">{postCount === 1 ? 'post' : 'posts'}</span>
+            </span>
+          </div>
+
+          {/* Name + role "bio" line */}
+          <div className="text-center sm:text-left">
+            <p className="text-sm font-semibold text-foreground">{displayName}</p>
+            <p className="text-sm capitalize text-muted">{roleLabel}</p>
+          </div>
         </div>
-        <Link
-          href="/dashboard"
-          className="text-sm font-semibold text-muted transition-colors duration-300 ease-out hover:text-accent"
-        >
-          ← Back to dashboard
-        </Link>
       </header>
 
-      <section className="rounded-2xl border border-hairline bg-surface p-6">
-        <h2 className="font-serif text-lg font-semibold text-foreground">Personal details</h2>
+      {/* Tab bar */}
+      <nav className="flex items-center justify-center gap-12" aria-label="Profile sections">
+        <button
+          type="button"
+          onClick={() => setTab('posts')}
+          className={`-mt-px flex items-center gap-2 border-t-2 px-2 py-3 text-xs font-semibold uppercase tracking-wide transition-colors duration-200 ${
+            tab === 'posts'
+              ? 'border-foreground text-foreground'
+              : 'border-transparent text-muted hover:text-foreground'
+          }`}
+        >
+          <span aria-hidden="true">▦</span> Posts
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('activity')}
+          className={`-mt-px flex items-center gap-2 border-t-2 px-2 py-3 text-xs font-semibold uppercase tracking-wide transition-colors duration-200 ${
+            tab === 'activity'
+              ? 'border-foreground text-foreground'
+              : 'border-transparent text-muted hover:text-foreground'
+          }`}
+        >
+          <span aria-hidden="true">💬</span> Activity
+        </button>
+      </nav>
 
-        <form onSubmit={handleSave} className="mt-4 space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-muted">First name</label>
-              <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                maxLength={60}
-                required
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-muted">Last name</label>
-              <input
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                maxLength={60}
-                required
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-muted">
-              Phone number <span className="text-muted/70 text-xs">(Optional)</span>
-            </label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              maxLength={30}
-              className={inputClass}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-muted">Email</label>
-              <input type="email" value={user.email} readOnly disabled className={readonlyClass} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-muted">Account role</label>
-              <input type="text" value={user.role.replace('_', ' ')} readOnly disabled className={readonlyClass} />
-            </div>
-          </div>
-
-          {error ? <p className="text-sm text-danger">{error}</p> : null}
-          {status ? <p className="text-sm font-semibold text-success">{status}</p> : null}
-
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-background shadow-md transition-colors duration-300 ease-out hover:bg-accent-hover disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Save changes'}
-          </button>
-        </form>
-      </section>
-
-      <section className="rounded-2xl border border-hairline bg-surface p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="font-serif text-lg font-semibold text-foreground">Password</h2>
-            <p className="mt-1 text-sm text-muted">Change the password you use to sign in.</p>
-          </div>
-          <Link
-            href="/profile/change-password"
-            className="rounded-full border border-hairline bg-surface-raised px-4 py-2 text-sm font-semibold text-foreground transition-colors duration-300 ease-out hover:border-accent hover:text-accent"
-          >
-            Change password
-          </Link>
-        </div>
-      </section>
-
-      <section>
-        <MfaSetup />
+      {/* Tab content */}
+      <section className="pt-6">
+        {tab === 'posts' ? (
+          <ProfileUploads onCountChange={setPostCount} />
+        ) : (
+          <ProfileComments />
+        )}
       </section>
     </main>
   );

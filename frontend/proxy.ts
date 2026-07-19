@@ -108,6 +108,19 @@ export function proxy(request: NextRequest) {
   const response = NextResponse.next();
   applySecurityHeaders(response);
 
+  // Signed-in visitors don't need the marketing landing page — send them straight to their
+  // dashboard. A stale cookie that no longer authenticates just lands on /dashboard, whose
+  // own client guard will bounce it to /login.
+  if (pathname === "/") {
+    const hasSession =
+      request.cookies.has("accessToken") || request.cookies.has("refreshToken");
+    if (hasSession) {
+      const redirect = NextResponse.redirect(new URL("/dashboard", request.url));
+      applySecurityHeaders(redirect);
+      return redirect;
+    }
+  }
+
   // Edge auth guard: block protected pages when no session cookie is present.
   // An expired access token with a valid refresh token still passes (the client
   // silently refreshes); only a total absence of both bounces to /login.

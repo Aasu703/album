@@ -179,7 +179,7 @@ export default function DashboardPage() {
                 You haven&apos;t posted any paintings yet.
               </p>
             ) : (
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <div className="flex w-full max-w-2xl flex-col gap-6">
                 {myArtworks.map((art) => (
                   <ArtistArtworkCard key={art.id} artwork={art} />
                 ))}
@@ -205,7 +205,7 @@ export default function DashboardPage() {
               No paintings in the gallery yet.
             </p>
           ) : (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="flex w-full max-w-2xl flex-col gap-6">
               {feed.map((art) => (
                 <GalleryFeedCard key={art.id} artwork={art} />
               ))}

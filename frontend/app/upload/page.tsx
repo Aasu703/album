@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import ArtworkUploadForm from "@/components/ArtworkUploadForm";
 import SignedOutGate from "./_components/SignedOutGate";
-import BecomeArtistGate from "./_components/BecomeArtistGate";
 import AdminGate from "./_components/AdminGate";
 
 export default function UploadPage() {
@@ -17,21 +16,21 @@ export default function UploadPage() {
   }
 
   if (!user) return <SignedOutGate />;
-  if (user.role === "USER") return <BecomeArtistGate />;
+  // Admins manage the platform rather than post to it.
   if (user.role === "ADMIN") return <AdminGate />;
 
-  // Verified artist — full upload experience.
+  // Any signed-in member can share a photo — public to the gallery or private to themselves.
   return (
     <div className="mx-auto max-w-xl px-6 py-12">
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.2em] text-accent">New painting</p>
-        <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight text-foreground">Share your work</h1>
+        <p className="text-xs uppercase tracking-[0.2em] text-accent">New photo</p>
+        <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight text-foreground">Share a photo</h1>
         <p className="mt-2 text-sm text-muted">
-          Upload an image and add a title and description. It&apos;ll appear in the gallery right away.
+          Upload an image, add a title and description, and choose whether it&apos;s public or private.
         </p>
       </div>
 
-      <ArtworkUploadForm submitLabel="Publish to gallery" onCreated={() => router.push("/dashboard")} />
+      <ArtworkUploadForm submitLabel="Share photo" onCreated={() => router.push("/profile")} />
     </div>
   );
 }

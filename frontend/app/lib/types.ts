@@ -25,13 +25,31 @@ export interface ArtworkPainter {
   lastName: string;
 }
 
+export type ArtworkVisibility = "public" | "private";
+
 export interface Artwork {
   id: string;
   title: string;
   description: string;
   imageUrl: string;
   painterId: string | ArtworkPainter;
+  visibility?: ArtworkVisibility;
   createdAt: string;
+}
+
+/** A comment left by the current user, with its artwork populated for linking back. */
+export interface MyComment {
+  id: string;
+  text: string;
+  createdAt: string;
+  artworkId:
+    | string
+    | {
+        id: string;
+        title: string;
+        imageUrl: string;
+        visibility?: ArtworkVisibility;
+      };
 }
 
 export interface ArtworkListResult {

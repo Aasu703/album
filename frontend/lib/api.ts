@@ -12,6 +12,17 @@ export const api = axios.create({
   },
 });
 
+// File uploads use FormData. The JSON default above would suppress the multipart boundary
+// the browser needs, so the server would see the file field ('image') as a plain body
+// property and reject it ("property image should not exist"). Drop the header for FormData
+// bodies and let the browser set 'multipart/form-data; boundary=…' itself.
+api.interceptors.request.use((config) => {
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    config.headers.delete('Content-Type');
+  }
+  return config;
+});
+
 // Endpoints where a 401 is terminal — never try to refresh or retry these.
 const AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh', '/auth/logout'];
 // Public routes where an expired session should NOT bounce the visitor to /login.

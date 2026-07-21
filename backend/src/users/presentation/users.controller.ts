@@ -1,4 +1,18 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from '../application/auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Roles } from './decorators/roles.decorator';
@@ -8,6 +22,9 @@ import { RolesGuard } from './guards/roles.guard';
 import { BanUserDto } from './dto/ban-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+const ALLOWED_AVATAR_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 @Controller('users')
 // Apply guards globally to the controller for defense-in-depth
@@ -29,6 +46,34 @@ export class UsersController {
     @CurrentUser() user: AuthenticatedRequest['user'],
   ) {
     const updated = await this.authService.updateProfile(user.sub, dto);
+    return { success: true, data: { user: updated } };
+  }
+
+  // Self-service: upload or replace the current user's profile picture.
+  @Post('me/avatar')
+  @UseInterceptors(FileInterceptor('image'))
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentUser() user: AuthenticatedRequest['user'],
+  ) {
+    if (!file) {
+      throw new BadRequestException('No image was provided.');
+    }
+    if (!ALLOWED_AVATAR_MIME_TYPES.has(file.mimetype)) {
+      throw new BadRequestException('Profile picture must be JPEG, PNG, or WEBP.');
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      throw new BadRequestException('Profile picture must be 5MB or smaller.');
+    }
+
+    const updated = await this.authService.updateAvatar(user.sub, file);
+    return { success: true, data: { user: updated } };
+  }
+
+  // Self-service: drop the profile picture and fall back to the initials avatar.
+  @Delete('me/avatar')
+  async removeAvatar(@CurrentUser() user: AuthenticatedRequest['user']) {
+    const updated = await this.authService.removeAvatar(user.sub);
     return { success: true, data: { user: updated } };
   }
 

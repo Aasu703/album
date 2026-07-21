@@ -1,7 +1,7 @@
 import GalleryFeed from "@/components/GalleryFeed";
 
 export const metadata = {
-  title: "Browse Paintings — Painting Gallery",
+  title: "Browse Paintings — Album",
 };
 
 export default async function PaintingsPage({

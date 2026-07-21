@@ -39,7 +39,12 @@ export default function ProfilePage() {
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:px-6">
       {/* Instagram-style header */}
       <header className="flex flex-col items-center gap-6 border-b border-hairline pb-8 sm:flex-row sm:items-start sm:gap-12 sm:pl-6">
-        <Avatar name={displayName} color={generateAvatarColor(user.email)} size="xl" />
+        <Avatar
+          name={displayName}
+          color={generateAvatarColor(user.email)}
+          size="xl"
+          src={user.avatarUrl}
+        />
 
         <div className="flex flex-1 flex-col items-center gap-4 sm:items-start">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">

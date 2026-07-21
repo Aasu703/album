@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import Avatar from "@/components/Avatar";
+import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/components/AuthProvider";
 import { generateAvatarColor } from "@/lib/avatar";
@@ -18,9 +19,8 @@ export default function Navbar() {
     // nav overlays it in a fixed dark scope regardless of the app theme.
     return (
       <header className="dark absolute top-0 left-0 right-0 z-10 flex h-16 items-center justify-between px-6 bg-transparent">
-        <Link href="/" className="flex items-center gap-2">
-          <span aria-hidden="true" className="text-xl">🎨</span>
-          <span className="font-serif text-lg font-semibold tracking-tight text-foreground">Painting Gallery</span>
+        <Link href="/" className="flex items-center">
+          <Logo size="md" priority />
         </Link>
         <div className="flex items-center gap-4">
           <ThemeToggle />
@@ -30,6 +30,7 @@ export default function Navbar() {
                 name={`${user.firstName} ${user.lastName}`}
                 color={generateAvatarColor(user.email)}
                 size="sm"
+                src={user.avatarUrl}
               />
             </Link>
           ) : (
@@ -55,10 +56,9 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 font-serif text-lg font-semibold tracking-tight text-foreground transition-colors duration-300 ease-out hover:text-accent"
+            className="inline-flex items-center transition-opacity duration-300 ease-out hover:opacity-80"
           >
-            <span aria-hidden="true">🎨</span>
-            Painting Gallery
+            <Logo size="md" priority />
           </Link>
           <Link
             href="/paintings"
@@ -100,7 +100,12 @@ export default function Navbar() {
                 className="flex items-center gap-2"
                 title="Your profile"
               >
-                <Avatar name={displayName} color={generateAvatarColor(user.email)} size="sm" />
+                <Avatar
+                  name={displayName}
+                  color={generateAvatarColor(user.email)}
+                  size="sm"
+                  src={user.avatarUrl}
+                />
                 <span className="hidden max-w-32 truncate text-sm font-semibold text-foreground transition-colors duration-300 ease-out hover:text-accent sm:inline">
                   {displayName}
                 </span>

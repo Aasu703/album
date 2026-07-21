@@ -17,6 +17,7 @@ import type { UserRepository } from '../domain/user.repository';
 import { LoginDto } from '../presentation/dto/login.dto';
 import { RegisterDto } from '../presentation/dto/register.dto';
 import { MailService } from '../../mail/mail.service';
+import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import * as crypto from 'crypto';
 
 export interface AuthTokens {
@@ -34,6 +35,7 @@ export interface PublicUser {
   sellerStatus: string;
   isBanned: boolean;
   isMfaEnabled: boolean;
+  avatarUrl: string | null;
   createdAt: Date;
 }
 
@@ -48,6 +50,7 @@ function toPublicUser(user: User): PublicUser {
     sellerStatus: user.sellerStatus,
     isBanned: user.isBanned,
     isMfaEnabled: user.isMfaEnabled ?? false,
+    avatarUrl: user.avatarUrl ?? null,
     createdAt: user.createdAt,
   };
 }
@@ -63,6 +66,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   private signTokens(user: User): AuthTokens {
@@ -345,6 +349,54 @@ export class AuthService {
     if (!updated) {
       throw new BadRequestException('Failed to update profile.');
     }
+    return toPublicUser(updated);
+  }
+
+  /** Replaces the user's profile picture, discarding the previously stored image. */
+  async updateAvatar(userId: string, file: Express.Multer.File): Promise<PublicUser> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    const upload = await this.cloudinaryService.uploadImage(file, 'painting-marketplace/avatars');
+
+    const updated = await this.userRepository.update(user.id, {
+      avatarUrl: upload.secure_url,
+      avatarPublicId: upload.public_id,
+    });
+    if (!updated) {
+      // The DB write failed, so the freshly uploaded asset would otherwise be orphaned.
+      await this.cloudinaryService.destroyImage(upload.public_id);
+      throw new BadRequestException('Failed to update profile picture.');
+    }
+
+    if (user.avatarPublicId) {
+      await this.cloudinaryService.destroyImage(user.avatarPublicId);
+    }
+
+    return toPublicUser(updated);
+  }
+
+  /** Clears the profile picture, falling back to the generated initials avatar. */
+  async removeAvatar(userId: string): Promise<PublicUser> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    const updated = await this.userRepository.update(user.id, {
+      avatarUrl: null,
+      avatarPublicId: null,
+    });
+    if (!updated) {
+      throw new BadRequestException('Failed to remove profile picture.');
+    }
+
+    if (user.avatarPublicId) {
+      await this.cloudinaryService.destroyImage(user.avatarPublicId);
+    }
+
     return toPublicUser(updated);
   }
 

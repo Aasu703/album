@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
 import { MailModule } from '../mail/mail.module';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { AuthService } from './application/auth.service';
 import { USER_REPOSITORY } from './domain/user.repository';
 import { UserMongooseSchema, UserSchemaClass } from './infrastructure/user.schema';
@@ -21,6 +22,7 @@ import { GoogleStrategy } from './presentation/strategies/google.strategy';
     // Stateless OAuth: no server-side passport session — we mint our own JWT cookies.
     PassportModule.register({ session: false }),
     MailModule,
+    CloudinaryModule,
   ],
   controllers: [AuthController, UsersController],
   providers: [

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/components/AuthProvider';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
+import Logo from '@/components/Logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,8 +17,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Step 2 State (MFA)
+  // MFA state. `mfaRequired` is the forced second step the backend asks for when a 2FA
+  // account signs in without a code; `showMfaField` is the user opting to supply the code
+  // upfront so the whole sign-in completes in a single request.
   const [mfaRequired, setMfaRequired] = useState(false);
+  const [showMfaField, setShowMfaField] = useState(false);
   const [mfaToken, setMfaToken] = useState('');
 
   const [error, setError] = useState('');
@@ -41,9 +46,11 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    // Task 2: MFA Login UI Flow
-    // Step 1: Attempt standard login or Step 2: Attempt login with MFA token
-    const result = await login(email, password, mfaRequired ? mfaToken : undefined);
+    // Send the code whenever we have one — either because the user supplied it upfront or
+    // because the backend already asked for it. Omitted entirely otherwise, so accounts
+    // without 2FA are unaffected.
+    const suppliedToken = mfaRequired || showMfaField ? mfaToken.trim() : '';
+    const result = await login(email, password, suppliedToken || undefined);
 
     if (result.success) {
       // On success, the backend sets HttpOnly cookies (we don't receive raw JWTs).
@@ -64,7 +71,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
       <div className="w-full max-w-md p-8 space-y-6 bg-surface rounded-2xl shadow-2xl border border-hairline">
-        <h1 className="font-serif text-3xl font-semibold text-center text-foreground">Sign In</h1>
+        <div className="flex flex-col items-center gap-4">
+          <Link href="/" aria-label="Album home">
+            <Logo variant="icon" size="lg" priority />
+          </Link>
+          <h1 className="font-serif text-3xl font-semibold text-center text-foreground">Sign In</h1>
+        </div>
 
         {notice && (
           <div className="p-3 text-sm text-success bg-success/10 border border-success/40 rounded-lg">
@@ -122,6 +134,38 @@ export default function LoginPage() {
                     )}
                   </button>
                 </div>
+              </div>
+
+              {/* Optional upfront code: lets anyone with 2FA enabled finish sign-in in a
+                  single submit instead of waiting for the backend to ask for it. */}
+              <div>
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-muted">
+                  <input
+                    type="checkbox"
+                    checked={showMfaField}
+                    onChange={(e) => {
+                      setShowMfaField(e.target.checked);
+                      if (!e.target.checked) setMfaToken('');
+                    }}
+                    className="h-4 w-4 rounded border-hairline accent-accent"
+                  />
+                  I have an authenticator code
+                </label>
+
+                {showMfaField ? (
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={mfaToken}
+                    onChange={(e) => setMfaToken(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    aria-label="Authenticator app code"
+                    autoFocus
+                    className="mt-3 w-full p-3 text-center text-2xl tracking-[0.5em] bg-surface-raised border border-hairline rounded-lg focus:ring-2 focus:ring-accent focus:border-accent transition-colors duration-300 ease-out outline-none"
+                  />
+                ) : null}
               </div>
             </>
           ) : (

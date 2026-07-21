@@ -11,6 +11,7 @@ export interface AuthUser {
   sellerStatus: SellerStatus;
   isBanned: boolean;
   isMfaEnabled: boolean;
+  avatarUrl: string | null;
   createdAt: string;
 }
 

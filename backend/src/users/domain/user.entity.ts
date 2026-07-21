@@ -28,6 +28,10 @@ export interface User {
   resetOtpHash?: string | null;
   /** When the pending reset OTP expires. */
   resetOtpExpires?: Date | null;
+  /** Cloudinary URL of the profile picture; null falls back to the generated initials avatar. */
+  avatarUrl?: string | null;
+  /** Cloudinary public id, kept so the previous image can be destroyed on replace. */
+  avatarPublicId?: string | null;
 }
 
 export type NewUser = Omit<

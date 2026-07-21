@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { api } from '@/lib/api';
+import Logo from '@/components/Logo';
 
 function extractErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'response' in error) {
@@ -70,13 +71,18 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
       <div className="w-full max-w-md p-8 space-y-6 bg-surface rounded-2xl shadow-2xl border border-hairline">
-        <div className="text-center space-y-1">
-          <h1 className="font-serif text-3xl font-semibold text-foreground">Reset password</h1>
-          <p className="text-sm text-muted">
-            {step === 'request'
-              ? 'Enter your email and we’ll send you a 6-digit reset code.'
-              : 'Enter the code we sent and choose a new password.'}
-          </p>
+        <div className="flex flex-col items-center gap-4">
+          <Link href="/" aria-label="Album home">
+            <Logo variant="icon" size="lg" priority />
+          </Link>
+          <div className="text-center space-y-1">
+            <h1 className="font-serif text-3xl font-semibold text-foreground">Reset password</h1>
+            <p className="text-sm text-muted">
+              {step === 'request'
+                ? 'Enter your email and we’ll send you a 6-digit reset code.'
+                : 'Enter the code we sent and choose a new password.'}
+            </p>
+          </div>
         </div>
 
         {error && (

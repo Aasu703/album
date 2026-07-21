@@ -18,12 +18,19 @@ import { GoogleOAuthUser } from './strategies/google.strategy';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000';
 
+// 'lax' rather than 'strict' because the Google OAuth callback lands the browser on a
+// protected page via a redirect chain that starts off-site: browsers withhold Strict
+// cookies from that navigation, so the edge guard in proxy.ts would see no session and
+// bounce a just-authenticated user back to /login. Lax still withholds cookies from
+// cross-site subrequests and non-GET navigations, which is where CSRF risk actually lives.
+const COOKIE_SAMESITE = (process.env.COOKIE_SAMESITE ?? 'lax') as CookieOptions['sameSite'];
+
 function cookieOptions(maxAge: number): CookieOptions {
   return {
     httpOnly: true,
     // Secure cookies are dropped by browsers over plain HTTP, which breaks local dev.
     secure: IS_PRODUCTION,
-    sameSite: 'strict',
+    sameSite: COOKIE_SAMESITE,
     maxAge,
   };
 }
@@ -147,8 +154,14 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
   async googleCallback(@Req() req: Request, @Res() res: Response) {
+    // Null when the handshake itself failed (denied consent, expired/replayed code, or a
+    // provider error) — GoogleAuthGuard hands us null rather than throwing so we can redirect.
+    const oauthUser = req.user as GoogleOAuthUser | null;
+    if (!oauthUser) {
+      return res.redirect(`${FRONTEND_ORIGIN}/login?error=oauth`);
+    }
+
     try {
-      const oauthUser = req.user as GoogleOAuthUser;
       const result = await this.authService.validateOAuthLogin(oauthUser);
       setAuthCookies(res, result.accessToken, result.refreshToken);
       return res.redirect(`${FRONTEND_ORIGIN}/dashboard`);

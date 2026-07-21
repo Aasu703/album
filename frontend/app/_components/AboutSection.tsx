@@ -40,7 +40,7 @@ export default function AboutSection() {
               A gallery, reimagined
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted">
-              Painting Gallery is a home for original art — a place where independent painters
+              Album is a home for original art — a place where independent painters
               post their work and collectors react, comment, and follow along. No middlemen, no
               prints, just one-of-a-kind pieces shared directly by the people who made them.
             </p>

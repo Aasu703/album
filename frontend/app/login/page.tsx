@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/components/AuthProvider';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
+import Logo from '@/components/Logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -64,7 +66,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
       <div className="w-full max-w-md p-8 space-y-6 bg-surface rounded-2xl shadow-2xl border border-hairline">
-        <h1 className="font-serif text-3xl font-semibold text-center text-foreground">Sign In</h1>
+        <div className="flex flex-col items-center gap-4">
+          <Link href="/" aria-label="Album home">
+            <Logo variant="icon" size="lg" priority />
+          </Link>
+          <h1 className="font-serif text-3xl font-semibold text-center text-foreground">Sign In</h1>
+        </div>
 
         {notice && (
           <div className="p-3 text-sm text-success bg-success/10 border border-success/40 rounded-lg">

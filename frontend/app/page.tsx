@@ -7,7 +7,7 @@ import type { Artwork, ArtworkListResult } from "@/app/lib/types";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
 export const metadata = {
-  title: "Painting Gallery — Discover original art",
+  title: "Album — Discover original art",
   description:
     "Discover original paintings from independent artists. React, comment, and follow the artists you love.",
 };

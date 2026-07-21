@@ -60,6 +60,12 @@ export class UserSchemaClass {
 
   @Prop()
   resetOtpExpires?: Date;
+
+  @Prop()
+  avatarUrl?: string;
+
+  @Prop()
+  avatarPublicId?: string;
 }
 
 export const UserMongooseSchema = SchemaFactory.createForClass(UserSchemaClass);
@@ -79,6 +85,7 @@ UserMongooseSchema.set('toJSON', {
     delete ret.mfaSecret;
     delete ret.resetOtpHash;
     delete ret.resetOtpExpires;
+    delete ret.avatarPublicId;
     return ret;
   }) as (...args: unknown[]) => unknown,
 });

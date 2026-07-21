@@ -26,6 +26,8 @@ function toDomain(doc: UserDocument): User {
     providerId: doc.providerId ?? null,
     resetOtpHash: doc.resetOtpHash ?? null,
     resetOtpExpires: doc.resetOtpExpires ?? null,
+    avatarUrl: doc.avatarUrl ?? null,
+    avatarPublicId: doc.avatarPublicId ?? null,
   };
 }
 

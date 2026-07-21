@@ -20,7 +20,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Painting Gallery",
+  title: "Album",
   description: "Discover original paintings from independent artists. React and comment on the pieces you love.",
 };
 

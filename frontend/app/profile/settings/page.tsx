@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import { api } from '@/lib/api';
 import MfaSetup from '@/components/MfaSetup';
+import AvatarUpload from '@/components/AvatarUpload';
 
 function extractErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'response' in error) {
@@ -86,6 +87,8 @@ export default function ProfileSettingsPage() {
           ← Back to profile
         </Link>
       </header>
+
+      <AvatarUpload />
 
       <section className="rounded-2xl border border-hairline bg-surface p-6">
         <h2 className="font-serif text-lg font-semibold text-foreground">Personal details</h2>

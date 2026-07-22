@@ -319,7 +319,7 @@ export class AuthService {
       throw new BadRequestException('Failed to reject painter application.');
     }
     return toPublicUser(updated);
-  }
+  } 
 
   async me(userId: string): Promise<PublicUser> {
     const user = await this.userRepository.findById(userId);

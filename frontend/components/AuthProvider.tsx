@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { api } from "@/lib/api";
 import type { AuthUser } from "@/app/lib/types";
@@ -77,6 +78,7 @@ function extractErrorMessage(error: unknown): string {
 
 /** Provides auth state backed by NestJS httpOnly cookies (no client-side token handling). */
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   // Starts null to match the server-rendered HTML (there is no localStorage on the
   // server) — reading the cache here would break hydration. The mount effect below
   // hydrates from the cached profile immediately after, so the signed-in UI still
@@ -142,6 +144,14 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     } catch {
       // Clearing local state is still best-effort even if the request fails.
     }
+
+    // Land on the public landing page. This runs *after* the request settles so the
+    // server has already sent the cookie-clearing response — navigating earlier would
+    // let the edge guard in proxy.ts still see a session and bounce us to /dashboard.
+    // `replace` keeps the signed-in page out of history, and `refresh` drops any cached
+    // server-rendered payload that was produced while authenticated.
+    router.replace("/");
+    router.refresh();
   }
 
   return (

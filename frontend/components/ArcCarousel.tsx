@@ -8,6 +8,7 @@ interface ArcCarouselProps {
 }
 
 export default function ArcCarousel({ photos }: ArcCarouselProps) {
+  const [mounted, setMounted] = useState(false);
   const [offset, setOffset] = useState(0);
   const animRef = useRef<number | undefined>(undefined);
   const lastTimeRef = useRef<number>(0);
@@ -18,6 +19,10 @@ export default function ArcCarousel({ photos }: ArcCarouselProps) {
     arcStart: 195,
     arcEnd: 345,
   });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     function handleResize() {
@@ -66,6 +71,11 @@ export default function ArcCarousel({ photos }: ArcCarouselProps) {
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
+
+  // Purely decorative, client-driven animation that depends on window size and
+  // floating-point trig. Rendering it on the server produces markup the client
+  // can't match byte-for-byte, so we only render after mount.
+  if (!mounted) return null;
 
   const centerX = 0;
   const centerY = 280;

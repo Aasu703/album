@@ -219,7 +219,7 @@ export class AuthService {
     const otpauthUrl = authenticator.keyuri(user.email, 'PaintingGallery', secret);
 
     await this.userRepository.update(user.id, { mfaSecret: secret });
-
+    //  await this.userRepository.update(user.id, { mfaSecret: secret });
     return { secret, otpauthUrl };
   }
 

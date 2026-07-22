@@ -6,7 +6,7 @@ const PLACEHOLDER_PHOTOS = [
   "https://images.unsplash.com/photo-1541961017774-22349e4a1262",
   "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=300",
   "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300",
-  "https://images.unsplash.com/photo-1518791841217-8f162f1912da?w=300",
+  "https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=300",
   "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300",
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300",
   "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300",

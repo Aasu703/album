@@ -39,10 +39,51 @@ services:
     networks:
       - web
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # Override the env_file's host-oriented values so the API talks to the
+      # in-network Mongo service and trusts the browser's real origin.
+      MONGODB_URI: mongodb://mongo:27017/painting_marketplace
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
+    # Exposed on the host so the browser can call the API directly at
+    # http://localhost:4000/api (the value baked into the frontend below).
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    pids_limit: 200
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    depends_on:
+      - mongo
+    networks:
+      - web
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # NEXT_PUBLIC_* is inlined at build time, so the browser's API base URL is
+        # fixed here. Override for a real deployment (e.g. https://api.example.com/api).
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}
     env_file:
       - .env.local
     environment:
@@ -72,6 +113,7 @@ services:
         max-file: "5"
     depends_on:
       - traefik
+      - backend
     networks:
       - web
     labels:

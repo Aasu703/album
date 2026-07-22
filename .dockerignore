@@ -1,0 +1,15 @@
+# Keep the build context small and reproducible. The root Dockerfile only needs
+# frontend source + lockfile; everything below is either rebuilt in-image, secret,
+# or irrelevant to the frontend build.
+**/node_modules
+**/.next
+**/dist
+**/coverage
+.git
+.gitignore
+**/*.log
+**/.env
+**/.env.*
+**/tsconfig.tsbuildinfo
+**/README.md
+backend

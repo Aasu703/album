@@ -13,6 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { assertIsAllowedImageContent } from '../../common/assert-image-content';
 import { CurrentUser } from '../../users/presentation/decorators/current-user.decorator';
 import { JwtAuthGuard, AuthenticatedRequest } from '../../users/presentation/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../../users/presentation/guards/optional-jwt-auth.guard';
@@ -72,6 +73,9 @@ export class ArtworksController {
       if (file.size > MAX_IMAGE_BYTES) {
         throw new BadRequestException('Image must be 10MB or smaller.');
       }
+      // Security: the check above only trusts the client-supplied Content-Type header.
+      // Sniff the actual bytes so a mislabeled/malicious upload can't slip through.
+      await assertIsAllowedImageContent(file.buffer, ALLOWED_IMAGE_MIME_TYPES);
     }
 
     // Security: We do NOT accept painterId from the request body as that would

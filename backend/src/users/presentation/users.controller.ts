@@ -13,6 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { assertIsAllowedImageContent } from '../../common/assert-image-content';
 import { AuthService } from '../application/auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Roles } from './decorators/roles.decorator';
@@ -65,6 +66,9 @@ export class UsersController {
     if (file.size > MAX_AVATAR_BYTES) {
       throw new BadRequestException('Profile picture must be 5MB or smaller.');
     }
+    // Security: the check above only trusts the client-supplied Content-Type header.
+    // Sniff the actual bytes so a mislabeled/malicious upload can't slip through.
+    await assertIsAllowedImageContent(file.buffer, ALLOWED_AVATAR_MIME_TYPES);
 
     const updated = await this.authService.updateAvatar(user.sub, file);
     return { success: true, data: { user: updated } };

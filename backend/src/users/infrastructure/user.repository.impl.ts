@@ -28,6 +28,7 @@ function toDomain(doc: UserDocument): User {
     resetOtpExpires: doc.resetOtpExpires ?? null,
     avatarUrl: doc.avatarUrl ?? null,
     avatarPublicId: doc.avatarPublicId ?? null,
+    tokenVersion: doc.tokenVersion ?? 0,
   };
 }
 
@@ -81,6 +82,17 @@ export class UserRepositoryImpl implements UserRepository {
 
   async update(id: string, data: Partial<User>): Promise<User | null> {
     const doc = await this.userModel.findByIdAndUpdate(id, data, { new: true });
+    return doc ? toDomain(doc) : null;
+  }
+
+  // Atomic so concurrent logout/password-change calls for the same user can't race and
+  // drop an increment (a plain read-modify-write via update() could).
+  async incrementTokenVersion(id: string): Promise<User | null> {
+    const doc = await this.userModel.findByIdAndUpdate(
+      id,
+      { $inc: { tokenVersion: 1 } },
+      { new: true },
+    );
     return doc ? toDomain(doc) : null;
   }
 }

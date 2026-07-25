@@ -66,6 +66,11 @@ export class UserSchemaClass {
 
   @Prop()
   avatarPublicId?: string;
+
+  // Bumped on logout/password change to invalidate every previously-issued JWT for this
+  // user in O(1) — see security-audit/long_lived_session_tokens_bug.md.
+  @Prop({ default: 0 })
+  tokenVersion: number;
 }
 
 export const UserMongooseSchema = SchemaFactory.createForClass(UserSchemaClass);

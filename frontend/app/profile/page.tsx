@@ -13,15 +13,17 @@ type Tab = 'posts' | 'activity';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isLoggingOutRef } = useAuth();
 
   const [tab, setTab] = useState<Tab>('posts');
   const [postCount, setPostCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
+    // Skip: an in-flight logout already owns where we navigate next (see AuthProvider).
+    if (isLoggingOutRef.current) return;
     if (!user) router.push('/login');
-  }, [authLoading, user, router]);
+  }, [authLoading, user, router, isLoggingOutRef]);
 
   if (authLoading || !user) {
     return (

@@ -19,7 +19,7 @@ function extractErrorMessage(error: unknown): string {
 
 export default function ChangePasswordPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isLoggingOutRef } = useAuth();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -33,8 +33,10 @@ export default function ChangePasswordPage() {
 
   useEffect(() => {
     if (authLoading) return;
+    // Skip: an in-flight logout already owns where we navigate next (see AuthProvider).
+    if (isLoggingOutRef.current) return;
     if (!user) router.push('/login');
-  }, [authLoading, user, router]);
+  }, [authLoading, user, router, isLoggingOutRef]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();

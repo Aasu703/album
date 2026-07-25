@@ -10,4 +10,5 @@ export interface UserRepository {
   findBySellerStatus(status: SellerStatus): Promise<User[]>;
   findAll(filter?: { role?: UserRole; isBanned?: boolean }): Promise<User[]>;
   update(id: string, data: Partial<User>): Promise<User | null>;
+  incrementTokenVersion(id: string): Promise<User | null>;
 }

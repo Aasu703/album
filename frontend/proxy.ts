@@ -39,13 +39,19 @@ function getClientKey(request: NextRequest) {
   return `${ip}:${request.nextUrl.pathname}`;
 }
 
-function getContentSecurityPolicy() {
+function getContentSecurityPolicy(nonce: string) {
   const allowUnsafeEval =
     process.env.NODE_ENV !== "production" ||
     process.env.CSP_ALLOW_UNSAFE_EVAL === "true";
+  // Scripts are allow-listed per-request via a nonce rather than 'unsafe-inline', so an
+  // attacker-injected <script> (e.g. via a future stored-XSS regression) has no way to
+  // guess a valid nonce and will not execute. 'strict-dynamic' lets scripts that Next's
+  // own nonce'd bootstrap script loads (e.g. chunked bundles) run without each one
+  // needing to be individually allow-listed.
   const scriptSrc = [
     "'self'",
-    "'unsafe-inline'",
+    `'nonce-${nonce}'`,
+    "'strict-dynamic'",
     allowUnsafeEval ? "'unsafe-eval'" : "",
   ]
     .filter(Boolean)
@@ -55,6 +61,13 @@ function getContentSecurityPolicy() {
     "default-src 'self'",
     "img-src 'self' https://res.cloudinary.com data: blob:",
     `script-src ${scriptSrc}`,
+    // style-src still needs 'unsafe-inline': several components (e.g. ArcCarousel,
+    // HeroSection) set React inline `style={{...}}` attributes with per-render computed
+    // values (photo positions/rotations), which CSP cannot allow-list via nonce — nonces
+    // only cover <style> elements, not inline style="" attributes, and the alternative
+    // ('unsafe-hashes') has inconsistent browser support. Inline *script* injection is
+    // the materially dangerous vector and is fully locked down above; CSS injection is a
+    // much lower-severity residual risk.
     "style-src 'self' 'unsafe-inline'",
     "connect-src 'self' http://localhost:4000",
     "font-src 'self' data:",
@@ -64,7 +77,7 @@ function getContentSecurityPolicy() {
   ].join("; ");
 }
 
-function applySecurityHeaders(response: NextResponse) {
+function applySecurityHeaders(response: NextResponse, nonce: string) {
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "no-referrer");
@@ -73,7 +86,7 @@ function applySecurityHeaders(response: NextResponse) {
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
   response.headers.set("Cross-Origin-Embedder-Policy", "unsafe-none");
   response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-  response.headers.set("Content-Security-Policy", getContentSecurityPolicy());
+  response.headers.set("Content-Security-Policy", getContentSecurityPolicy(nonce));
 }
 
 function checkRateLimit(request: NextRequest) {
@@ -105,8 +118,17 @@ function checkRateLimit(request: NextRequest) {
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const response = NextResponse.next();
-  applySecurityHeaders(response);
+
+  // Fresh per-request nonce for the CSP's script-src. Threaded through to Server
+  // Components via an `x-nonce` request header (read in app/layout.tsx) so the one
+  // legitimate inline <script> (the theme-init snippet) can be allow-listed without
+  // resorting to 'unsafe-inline'.
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  applySecurityHeaders(response, nonce);
 
   // Signed-in visitors don't need the marketing landing page — send them straight to their
   // dashboard. A stale cookie that no longer authenticates just lands on /dashboard, whose
@@ -116,7 +138,7 @@ export function proxy(request: NextRequest) {
       request.cookies.has("accessToken") || request.cookies.has("refreshToken");
     if (hasSession) {
       const redirect = NextResponse.redirect(new URL("/dashboard", request.url));
-      applySecurityHeaders(redirect);
+      applySecurityHeaders(redirect, nonce);
       return redirect;
     }
   }
@@ -131,7 +153,7 @@ export function proxy(request: NextRequest) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("next", pathname);
       const redirect = NextResponse.redirect(loginUrl);
-      applySecurityHeaders(redirect);
+      applySecurityHeaders(redirect, nonce);
       return redirect;
     }
   }
@@ -159,7 +181,7 @@ export function proxy(request: NextRequest) {
     { status: 429 },
   );
 
-  applySecurityHeaders(throttled);
+  applySecurityHeaders(throttled, nonce);
   throttled.headers.set("Retry-After", String(retryAfterSeconds));
   throttled.headers.set("X-RateLimit-Limit", String(RATE_LIMIT_MAX_REQUESTS));
   throttled.headers.set("X-RateLimit-Remaining", "0");

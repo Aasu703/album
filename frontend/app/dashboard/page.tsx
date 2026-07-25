@@ -22,7 +22,7 @@ function extractErrorMessage(error: unknown): string {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, refreshUser } = useAuth();
+  const { user, isLoading: authLoading, refreshUser, isLoggingOutRef } = useAuth();
   const [feed, setFeed] = useState<Artwork[]>([]);
   const [myArtworks, setMyArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push('/login');
+      // Skip: an in-flight logout already owns where we navigate next (see AuthProvider).
+      if (!isLoggingOutRef.current) router.push('/login');
       return;
     }
 
@@ -61,7 +62,7 @@ export default function DashboardPage() {
       tasks.push(fetchMyPaintings(user.id));
     }
     void Promise.all(tasks).finally(() => setLoading(false));
-  }, [authLoading, user, router, fetchFeed, fetchMyPaintings]);
+  }, [authLoading, user, router, fetchFeed, fetchMyPaintings, isLoggingOutRef]);
 
   async function handleApplySeller() {
     setApplying(true);

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { api } from "@/lib/api";
@@ -28,6 +28,10 @@ interface AuthContextValue {
   register: (data: RegisterInput) => Promise<AuthResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  /** True while a logout navigation is in flight. Ref, not state — reading it must
+   * never itself trigger a re-render/effect-rerun, only let an already-scheduled
+   * effect check it. See the guard note in logout() for why this exists. */
+  isLoggingOutRef: React.RefObject<boolean>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -85,6 +89,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   // appears without waiting for /auth/me.
   const [user, setUserState] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isLoggingOutRef = useRef(false);
 
   // Single writer for the user so React state and the localStorage cache never drift.
   function setUser(next: AuthUser | null) {
@@ -138,6 +143,13 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }
 
   async function logout() {
+    // Set before clearing `user` so that any protected page currently mounted (e.g.
+    // /profile) sees this flag already true when its own "redirect unauthenticated
+    // visitors to /login" effect fires in reaction to `user` going null below. Without
+    // this, that effect's router.push('/login') races the router.replace('/') further
+    // down (which only runs once the logout request settles), and the loser leaves the
+    // page stuck showing its own "Loading..." fallback instead of navigating anywhere.
+    isLoggingOutRef.current = true;
     setUser(null);
     try {
       await api.post("/auth/logout");
@@ -152,10 +164,13 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     // server-rendered payload that was produced while authenticated.
     router.replace("/");
     router.refresh();
+    isLoggingOutRef.current = false;
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, register, logout, refreshUser, isLoggingOutRef }}
+    >
       {children}
     </AuthContext.Provider>
   );

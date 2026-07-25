@@ -20,7 +20,7 @@ function extractErrorMessage(error: unknown): string {
 
 export default function ProfileSettingsPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, refreshUser } = useAuth();
+  const { user, isLoading: authLoading, refreshUser, isLoggingOutRef } = useAuth();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -32,13 +32,14 @@ export default function ProfileSettingsPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push('/login');
+      // Skip: an in-flight logout already owns where we navigate next (see AuthProvider).
+      if (!isLoggingOutRef.current) router.push('/login');
       return;
     }
     setFirstName(user.firstName);
     setLastName(user.lastName);
     setPhone(user.phone ?? '');
-  }, [authLoading, user, router]);
+  }, [authLoading, user, router, isLoggingOutRef]);
 
   async function handleSave(event: React.FormEvent) {
     event.preventDefault();

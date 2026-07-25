@@ -49,7 +49,16 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
-        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* suppressHydrationWarning: browsers blank the `nonce` attribute after parsing
+            (so injected scripts can't read and reuse it via getAttribute/innerHTML),
+            while the internal property that actually authorizes the script under CSP
+            stays intact. That makes React's SSR-vs-DOM attribute diff always mismatch
+            here even though nothing is actually wrong. */}
+        <script
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+        />
         <AppShell>{children}</AppShell>
       </body>
     </html>

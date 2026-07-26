@@ -70,7 +70,14 @@ export class AuthService {
   ) {}
 
   private signTokens(user: User): AuthTokens {
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    // tokenVersion is embedded so JwtAuthGuard and refresh() can reject any token minted
+    // before the account's last logout/password-change — see security-audit note.
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      tokenVersion: user.tokenVersion ?? 0,
+    };
 
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
@@ -248,7 +255,7 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string): Promise<AuthTokens> {
-    let payload: { sub: string };
+    let payload: { sub: string; tokenVersion?: number };
     try {
       payload = this.jwtService.verify(refreshToken, {
         secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
@@ -263,6 +270,9 @@ export class AuthService {
     }
     if (user.isBanned) {
       throw new ForbiddenException('This account has been suspended.');
+    }
+    if ((payload.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
+      throw new UnauthorizedException('Session has been revoked. Please log in again.');
     }
 
     return this.signTokens(user);
@@ -400,14 +410,35 @@ export class AuthService {
     return toPublicUser(updated);
   }
 
+  async revokeSession(accessToken?: string, refreshToken?: string): Promise<void> {
+    const userId =
+      this.verifySubjectIgnoringExpiry(accessToken, 'JWT_ACCESS_SECRET') ??
+      this.verifySubjectIgnoringExpiry(refreshToken, 'JWT_REFRESH_SECRET');
+
+    if (!userId) {
+      return;
+    }
+
+    await this.userRepository.incrementTokenVersion(userId);
+  }
+
+  private verifySubjectIgnoringExpiry(token: string | undefined, secretConfigKey: string): string | null {
+    if (!token) {
+      return null;
+    }
+    try {
+      const payload = this.jwtService.verify<{ sub: string }>(token, {
+        secret: this.configService.getOrThrow<string>(secretConfigKey),
+        ignoreExpiration: true,
+      });
+      return payload.sub;
+    } catch {
+      return null;
+    }
+  }
+
   // ---- Password reset (email OTP) ----
 
-  /**
-   * Starts a password reset. Always resolves without revealing whether the email exists
-   * (anti-enumeration). For a valid local account we generate a 6-digit OTP, store only its
-   * bcrypt hash with a short expiry, and email the raw code. OAuth-only accounts (no local
-   * password) are silently skipped — there is nothing to reset.
-   */
   async forgotPassword(email: string): Promise<void> {
     const normalized = email.toLowerCase().trim();
     const user = await this.userRepository.findByEmail(normalized);
@@ -453,10 +484,14 @@ export class AuthService {
       failedLoginAttempts: 0,
       lockoutUntil: null,
     });
+    await this.userRepository.incrementTokenVersion(user.id);
   }
 
-  /** Authenticated self-service password change: verify the current password, set a new one. */
-  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<AuthTokens> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new UnauthorizedException('User not found.');
@@ -478,6 +513,12 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await this.userRepository.update(user.id, { passwordHash });
+    const revoked = await this.userRepository.incrementTokenVersion(user.id);
+    if (!revoked) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    return this.signTokens(revoked);
   }
 
   // ---- Admin: user & painter management ----

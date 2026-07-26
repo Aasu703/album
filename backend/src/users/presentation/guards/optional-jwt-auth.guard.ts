@@ -34,11 +34,18 @@ export class OptionalJwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = this.jwtService.verify<{ sub: string; email: string; role: string }>(token, {
+      const payload = this.jwtService.verify<{
+        sub: string;
+        email: string;
+        role: string;
+        tokenVersion?: number;
+      }>(token, {
         secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
       });
       const user = await this.userRepository.findById(payload.sub);
-      if (user && !user.isBanned) {
+      // A revoked token (logout/password-change bumped tokenVersion since this token was
+      // issued) is treated the same as an invalid one: anonymous, not authenticated.
+      if (user && !user.isBanned && (payload.tokenVersion ?? 0) === (user.tokenVersion ?? 0)) {
         request.user = payload;
       }
     } catch {

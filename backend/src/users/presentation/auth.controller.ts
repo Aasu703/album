@@ -87,7 +87,9 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(200)
-  logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const cookies = req.cookies as Record<string, string> | undefined;
+    await this.authService.revokeSession(cookies?.accessToken, cookies?.refreshToken);
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     return { success: true };
@@ -130,8 +132,14 @@ export class AuthController {
   async changePassword(
     @CurrentUser() user: AuthenticatedRequest['user'],
     @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    await this.authService.changePassword(user.sub, dto.currentPassword, dto.newPassword);
+    const tokens = await this.authService.changePassword(
+      user.sub,
+      dto.currentPassword,
+      dto.newPassword,
+    );
+    setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
     return { success: true, message: 'Your password has been updated.' };
   }
 

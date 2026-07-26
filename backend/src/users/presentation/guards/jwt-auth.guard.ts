@@ -6,7 +6,7 @@ import { USER_REPOSITORY } from '../../domain/user.repository';
 import type { UserRepository } from '../../domain/user.repository';
 
 export interface AuthenticatedRequest extends Request {
-  user: { sub: string; email: string; role: string };
+  user: { sub: string; email: string; role: string; tokenVersion?: number };
 }
 
 @Injectable()
@@ -32,7 +32,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing access token.');
     }
 
-    let payload: { sub: string; email: string; role: string };
+    let payload: { sub: string; email: string; role: string; tokenVersion?: number };
     try {
       payload = this.jwtService.verify(token, {
         secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
@@ -50,6 +50,10 @@ export class JwtAuthGuard implements CanActivate {
     }
     if (user.isBanned) {
       throw new UnauthorizedException('This account has been suspended.');
+    }
+
+    if ((payload.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
+      throw new UnauthorizedException('Session has been revoked. Please log in again.');
     }
 
     request.user = payload;

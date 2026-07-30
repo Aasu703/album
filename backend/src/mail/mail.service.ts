@@ -49,4 +49,22 @@ export class MailService {
 
     await this.transporter.sendMail({ from: this.from, to, subject, text });
   }
+
+  /** Fired after a password reset actually succeeds, so a takeover is at least detectable
+   * by the real account owner even though the reset itself required no prior session. */
+  async sendPasswordChangedNotification(to: string): Promise<void> {
+    const subject = 'Your password was changed';
+    const text =
+      `Your Painting Gallery account password was just changed.\n\n` +
+      `If this was you, no action is needed. If you didn't do this, your account may be ` +
+      `compromised — contact support immediately and consider that any other device you're ` +
+      `still signed in on has now been signed out.`;
+
+    if (!this.transporter) {
+      this.logger.warn(`[DEV] Password-changed notification for ${to} (not sent — no SMTP configured).`);
+      return;
+    }
+
+    await this.transporter.sendMail({ from: this.from, to, subject, text });
+  }
 }

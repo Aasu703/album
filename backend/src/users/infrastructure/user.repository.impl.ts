@@ -26,6 +26,7 @@ function toDomain(doc: UserDocument): User {
     providerId: doc.providerId ?? null,
     resetOtpHash: doc.resetOtpHash ?? null,
     resetOtpExpires: doc.resetOtpExpires ?? null,
+    resetOtpAttempts: doc.resetOtpAttempts ?? 0,
     avatarUrl: doc.avatarUrl ?? null,
     avatarPublicId: doc.avatarPublicId ?? null,
     tokenVersion: doc.tokenVersion ?? 0,
@@ -91,6 +92,18 @@ export class UserRepositoryImpl implements UserRepository {
     const doc = await this.userModel.findByIdAndUpdate(
       id,
       { $inc: { tokenVersion: 1 } },
+      { new: true },
+    );
+    return doc ? toDomain(doc) : null;
+  }
+
+  // Atomic for the same reason as incrementTokenVersion: concurrent guesses against the
+  // same OTP (e.g. from a distributed attacker) must not be able to race a read-modify-write
+  // and under-count failed attempts.
+  async incrementResetOtpAttempts(id: string): Promise<User | null> {
+    const doc = await this.userModel.findByIdAndUpdate(
+      id,
+      { $inc: { resetOtpAttempts: 1 } },
       { new: true },
     );
     return doc ? toDomain(doc) : null;

@@ -22,6 +22,7 @@ export interface User {
   providerId?: string | null;
   resetOtpHash?: string | null;
   resetOtpExpires?: Date | null;
+  resetOtpAttempts?: number;
   avatarUrl?: string | null;
   avatarPublicId?: string | null;
   tokenVersion?: number;

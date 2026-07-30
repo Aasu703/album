@@ -58,6 +58,11 @@ function toPublicUser(user: User): PublicUser {
 const MAX_FAILED_LOGIN_ATTEMPTS = 10;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 const RESET_OTP_TTL_MINUTES = 10;
+// Caps guesses against a single OTP to 5, no matter how many source IPs an attacker
+// spreads requests across — the per-IP @Throttle on reset-password alone doesn't (see
+// security-audit/otp_bruteforce_bug.md). 5 wrong guesses invalidates the OTP immediately,
+// forcing a fresh forgot-password call rather than continuing to spend the remaining TTL.
+const MAX_RESET_OTP_ATTEMPTS = 5;
 
 @Injectable()
 export class AuthService {
@@ -452,7 +457,13 @@ export class AuthService {
     const resetOtpHash = await bcrypt.hash(otp, 10);
     const resetOtpExpires = new Date(Date.now() + RESET_OTP_TTL_MINUTES * 60 * 1000);
 
-    await this.userRepository.update(user.id, { resetOtpHash, resetOtpExpires });
+    // Fresh code = fresh guess budget: any attempts left over against a previous code
+    // (e.g. from an in-progress brute-force) don't carry over and cap the new one short.
+    await this.userRepository.update(user.id, {
+      resetOtpHash,
+      resetOtpExpires,
+      resetOtpAttempts: 0,
+    });
     await this.mailService.sendPasswordResetOtp(user.email, otp, RESET_OTP_TTL_MINUTES);
   }
 
@@ -470,8 +481,18 @@ export class AuthService {
     if (user.resetOtpExpires.getTime() < Date.now()) {
       throw genericError;
     }
+    if ((user.resetOtpAttempts ?? 0) >= MAX_RESET_OTP_ATTEMPTS) {
+      // The guess budget for this code is already spent (this request may itself be one
+      // of several concurrent distributed guesses that pushed it over) — invalidate the
+      // code outright rather than let a slow trickle of attempts keep probing it for the
+      // rest of the 10-minute TTL.
+      await this.userRepository.update(user.id, { resetOtpHash: null, resetOtpExpires: null });
+      throw new BadRequestException('Too many incorrect codes. Please request a new one.');
+    }
+
     const otpMatches = await bcrypt.compare(otp, user.resetOtpHash);
     if (!otpMatches) {
+      await this.userRepository.incrementResetOtpAttempts(user.id);
       throw genericError;
     }
 
@@ -480,11 +501,15 @@ export class AuthService {
       passwordHash,
       resetOtpHash: null,
       resetOtpExpires: null,
+      resetOtpAttempts: 0,
       // A successful reset also clears any brute-force lockout.
       failedLoginAttempts: 0,
       lockoutUntil: null,
     });
     await this.userRepository.incrementTokenVersion(user.id);
+    // Best-effort: a failed send here shouldn't fail the reset itself (the password is
+    // already changed and the user's own new session works regardless of this email).
+    await this.mailService.sendPasswordChangedNotification(user.email).catch(() => undefined);
   }
 
   async changePassword(

@@ -61,6 +61,13 @@ export class UserSchemaClass {
   @Prop()
   resetOtpExpires?: Date;
 
+  // Failed-guess counter scoped to the *current* OTP — reset to 0 every time
+  // forgotPassword() issues a fresh code. Caps brute-force guesses per account/OTP
+  // regardless of how many source IPs an attacker spreads requests across (the per-IP
+  // @Throttle on reset-password alone doesn't) — see security-audit/otp_bruteforce_bug.md.
+  @Prop({ default: 0 })
+  resetOtpAttempts: number;
+
   @Prop()
   avatarUrl?: string;
 
@@ -90,6 +97,7 @@ UserMongooseSchema.set('toJSON', {
     delete ret.mfaSecret;
     delete ret.resetOtpHash;
     delete ret.resetOtpExpires;
+    delete ret.resetOtpAttempts;
     delete ret.avatarPublicId;
     return ret;
   }) as (...args: unknown[]) => unknown,

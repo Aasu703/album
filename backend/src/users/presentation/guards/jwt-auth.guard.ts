@@ -41,9 +41,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or expired access token.');
     }
 
-    // Security Check: Re-validate against the current DB state on every request so a
-    // banned/deleted account is cut off immediately, even if its access token has not
-    // yet expired. Without this, banning a user would only take effect once the token expires.
+
     const user = await this.userRepository.findById(payload.sub);
     if (!user) {
       throw new UnauthorizedException('Account no longer exists.');
